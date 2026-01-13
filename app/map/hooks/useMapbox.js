@@ -80,8 +80,14 @@ export function useMapbox({ containerRef, anchors, isReady }) {
     return map;
   }, [anchors, containerRef]);
 
-  // Setup du pitch dynamique selon le zoom
+  // Setup du pitch dynamique selon le zoom (desktop uniquement)
   const setupDynamicPitch = (map) => {
+    // Désactiver sur mobile - laisser l'utilisateur contrôler le pitch
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    if (isMobile) return;
+
     let userDragging = false;
 
     map.on("dragstart", () => {
