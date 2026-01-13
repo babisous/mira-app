@@ -107,11 +107,14 @@
    ======================================== */
 
 .mapboxgl-ctrl-logo,
-.mapboxgl-ctrl-attrib {
+.mapboxgl-ctrl-attrib,
+.mapbox-improve-map {
   pointer-events: none !important;
 }
 
-.mapboxgl-ctrl-attrib a {
+.mapboxgl-ctrl-attrib a,
+.mapboxgl-ctrl-attrib-inner a,
+a.mapbox-improve-map {
   pointer-events: none !important;
 }
 
