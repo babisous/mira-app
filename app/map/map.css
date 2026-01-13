@@ -1,0 +1,126 @@
+/**
+ * Styles de la carte des artworks 3D
+ */
+
+/* ========================================
+   Container principal
+   ======================================== */
+
+.map-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0a0a0a;
+}
+
+/* ========================================
+   États de chargement et d'erreur
+   ======================================== */
+
+.map-loading,
+.map-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 20px;
+}
+
+.map-loading p,
+.map-error p {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.retry-button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+
+.retry-button:hover {
+  background: #0056b3;
+}
+
+/* ========================================
+   Zone de hover des artworks
+   ======================================== */
+
+.artwork-hover-zone {
+  width: 80px;
+  height: 80px;
+  cursor: pointer;
+  /* Debug: décommenter pour visualiser */
+  /* background: rgba(255, 0, 0, 0.2); */
+}
+
+/* ========================================
+   Labels des artworks
+   ======================================== */
+
+.artwork-label {
+  --label-opacity: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.artwork-label.visible {
+  display: flex;
+  opacity: var(--label-opacity);
+  transform: translateY(0);
+}
+
+.artwork-label-content {
+  background: #415eae;
+  padding: 8px 12px;
+  border: 2px solid #fff;
+}
+
+.artwork-label-title {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.artwork-label-user {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 768px) {
+  .artwork-hover-zone {
+    width: 60px;
+    height: 60px;
+  }
+
+  .artwork-label-content {
+    padding: 6px 10px;
+  }
+
+  .artwork-label-title {
+    font-size: 12px;
+  }
+
+  .artwork-label-user {
+    font-size: 10px;
+  }
+}
