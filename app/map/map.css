@@ -103,6 +103,19 @@
 }
 
 /* ========================================
+   Mapbox controls - Désactiver les clics
+   ======================================== */
+
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib {
+  pointer-events: none !important;
+}
+
+.mapboxgl-ctrl-attrib a {
+  pointer-events: none !important;
+}
+
+/* ========================================
    Responsive
    ======================================== */
 
