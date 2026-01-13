@@ -9,10 +9,10 @@ import anchorService from "@/lib/services/anchorService";
 
 export default function AnchorForm({ artwork, onSuccess, onCancel }) {
   const [formData, setFormData] = useState({
-    latitude: artwork.anchor?.latitude || "",
-    longitude: artwork.anchor?.longitude || "",
-    altitude: artwork.anchor?.altitude || "",
-    heading: artwork.anchor?.heading || "",
+    latitude: artwork.anchor?.latitude?.toString() ?? "",
+    longitude: artwork.anchor?.longitude?.toString() ?? "",
+    altitude: artwork.anchor?.altitude?.toString() ?? "",
+    heading: artwork.anchor?.heading?.toString() ?? "",
   });
 
   const [errors, setErrors] = useState({});
@@ -38,7 +38,7 @@ export default function AnchorForm({ artwork, onSuccess, onCancel }) {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.latitude.trim()) {
+    if (!String(formData.latitude).trim()) {
       newErrors.latitude = "La latitude est requise";
     } else {
       const lat = parseFloat(formData.latitude);
@@ -47,7 +47,7 @@ export default function AnchorForm({ artwork, onSuccess, onCancel }) {
       }
     }
 
-    if (!formData.longitude.trim()) {
+    if (!String(formData.longitude).trim()) {
       newErrors.longitude = "La longitude est requise";
     } else {
       const lon = parseFloat(formData.longitude);
@@ -56,14 +56,14 @@ export default function AnchorForm({ artwork, onSuccess, onCancel }) {
       }
     }
 
-    if (formData.altitude && formData.altitude.trim()) {
+    if (formData.altitude && String(formData.altitude).trim()) {
       const alt = parseFloat(formData.altitude);
       if (isNaN(alt)) {
         newErrors.altitude = "L'altitude doit être un nombre valide";
       }
     }
 
-    if (formData.heading && formData.heading.trim()) {
+    if (formData.heading && String(formData.heading).trim()) {
       const head = parseFloat(formData.heading);
       if (isNaN(head) || head < 0 || head > 360) {
         newErrors.heading = "L'orientation doit être entre 0 et 360 degrés";
@@ -87,10 +87,10 @@ export default function AnchorForm({ artwork, onSuccess, onCancel }) {
     try {
       const latitude = parseFloat(formData.latitude);
       const longitude = parseFloat(formData.longitude);
-      const altitude = formData.altitude.trim()
+      const altitude = String(formData.altitude).trim()
         ? parseFloat(formData.altitude)
         : null;
-      const heading = formData.heading.trim()
+      const heading = String(formData.heading).trim()
         ? parseFloat(formData.heading)
         : null;
 
