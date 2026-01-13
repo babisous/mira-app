@@ -10,6 +10,9 @@ import {
   computeModelMatrix,
 } from "../utils/threeUtils";
 
+// Couleur rouge du matériau
+export const MODEL_COLOR = 0xff0004;
+
 /**
  * Calcule la transformation Mercator pour un anchor
  */
@@ -64,16 +67,20 @@ export function createArtworkLayer({
   // État du layer
   let modelLoaded = false;
   let isVisible = true;
+  let skyLine = null;
+  let skyLineVisible = false;
 
   const customLayer = {
     id: layerId,
     type: "custom",
     renderingMode: "3d",
+    anchor, // Exposer l'anchor pour référence externe
 
     onAdd(map, gl) {
       this.camera = new THREE.Camera();
       this.scene = new THREE.Scene();
       this.map = map;
+      this.THREE = THREE;
 
       // Configuration de l'éclairage
       setupSceneLighting(THREE, this.scene);
@@ -89,6 +96,12 @@ export function createArtworkLayer({
           applyMaterialToModel(gltf.scene, material);
           this.model = gltf.scene;
           this.scene.add(gltf.scene);
+
+          // Calculer la bounding box pour la ligne
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          this.modelTop = box.max.y;
+          this.modelCenter = box.getCenter(new THREE.Vector3());
+
           modelLoaded = true;
         },
         undefined,
@@ -102,6 +115,33 @@ export function createArtworkLayer({
         antialias: true,
       });
       this.renderer.autoClear = false;
+    },
+
+    // Méthode pour activer/désactiver la ligne vers le ciel
+    showSkyLine(show) {
+      if (!modelLoaded || !this.THREE) return;
+
+      if (show && !skyLine) {
+        // Créer la ligne
+        const lineHeight = 500;
+        const geometry = new this.THREE.BufferGeometry().setFromPoints([
+          new this.THREE.Vector3(this.modelCenter.x, this.modelTop, this.modelCenter.z),
+          new this.THREE.Vector3(this.modelCenter.x, this.modelTop + lineHeight, this.modelCenter.z),
+        ]);
+        const material = new this.THREE.LineBasicMaterial({
+          color: MODEL_COLOR,
+          linewidth: 2,
+        });
+        skyLine = new this.THREE.Line(geometry, material);
+        this.scene.add(skyLine);
+        skyLineVisible = true;
+      } else if (!show && skyLine) {
+        this.scene.remove(skyLine);
+        skyLine.geometry.dispose();
+        skyLine.material.dispose();
+        skyLine = null;
+        skyLineVisible = false;
+      }
     },
 
     render(gl, matrix) {
@@ -124,7 +164,7 @@ export function createArtworkLayer({
       // Calcul du scale et de la matrice
       const currentScale = modelTransform.baseScale * getScaleMultiplier(zoom);
       this.camera.projectionMatrix = computeModelMatrix(
-        THREE,
+        this.THREE,
         modelTransform,
         currentScale,
         matrix

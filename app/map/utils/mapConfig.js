@@ -9,7 +9,7 @@ export const MAP_CONFIG = {
   // Zoom
   initialZoom: 18,
   minZoom: 6,
-  maxZoom: 22,
+  maxZoom: 24,
 
   // Pitch (inclinaison caméra)
   initialPitch: 60,

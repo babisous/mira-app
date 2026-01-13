@@ -51,18 +51,6 @@
 }
 
 /* ========================================
-   Zone de hover des artworks
-   ======================================== */
-
-.artwork-hover-zone {
-  width: 80px;
-  height: 80px;
-  cursor: pointer;
-  /* Debug: décommenter pour visualiser */
-  /* background: rgba(255, 0, 0, 0.2); */
-}
-
-/* ========================================
    Labels des artworks
    ======================================== */
 
@@ -73,14 +61,25 @@
   align-items: center;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .artwork-label.visible {
   display: flex;
   opacity: var(--label-opacity);
-  transform: translateY(0);
+}
+
+.artwork-label-content {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Zone de click invisible sur le modèle 3D */
+.artwork-click-zone {
+  width: 100px;
+  height: 100px;
+  cursor: pointer;
+  /* Debug: décommenter pour visualiser */
+  /* background: rgba(255, 0, 0, 0.3); */
 }
 
 .artwork-label-content {
