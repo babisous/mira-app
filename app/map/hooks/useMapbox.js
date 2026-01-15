@@ -19,13 +19,12 @@ const gpsState = {
 };
 
 /**
- * Crée l'élément HTML du marqueur utilisateur avec support de rotation
+ * Crée l'élément HTML du marqueur utilisateur
  */
 function createUserMarkerElement() {
   const el = document.createElement("div");
   el.className = "user-marker";
   el.innerHTML = `
-    <div class="user-marker-heading"></div>
     <div class="user-marker-dot"></div>
     <div class="user-marker-pulse"></div>
   `;
@@ -36,9 +35,8 @@ function createUserMarkerElement() {
  * Fonction globale appelée par Unity (et par le fallback Desktop)
  * @param {number} lat - Latitude
  * @param {number} lng - Longitude
- * @param {number} heading - Cap/orientation en degrés (0 = Nord) - utilisé uniquement pour le marqueur
  */
-function updateGPS(lat, lng, heading = 0) {
+function updateGPS(lat, lng) {
   const { map, mapboxgl } = gpsState;
   if (!map || !mapboxgl) {
     console.warn("updateGPS: Map not ready");
@@ -59,14 +57,7 @@ function updateGPS(lat, lng, heading = 0) {
     gpsState.userMarker.setLngLat(coords);
   }
 
-  // Appliquer la rotation au marqueur (heading) - uniquement sur le marqueur
-  const markerEl = gpsState.userMarker.getElement();
-  const headingEl = markerEl.querySelector(".user-marker-heading");
-  if (headingEl) {
-    headingEl.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
-  }
-
-  // Centrer la carte sur la position (sans modifier pitch/bearing)
+  // Centrer la carte sur la position au premier appel
   if (gpsState.isFirstPosition) {
     map.flyTo({
       center: coords,
@@ -75,7 +66,7 @@ function updateGPS(lat, lng, heading = 0) {
     gpsState.isFirstPosition = false;
   }
 
-  console.log("GPS updated:", { lat, lng, heading });
+  console.log("GPS updated:", { lat, lng });
 }
 
 // Exposer la fonction globalement pour Unity
@@ -96,11 +87,7 @@ function startDesktopGPS(cleanupRef) {
     (position) => {
       // N'utiliser le GPS navigateur QUE si Unity n'est pas actif
       if (!gpsState.isUnityContext) {
-        updateGPS(
-          position.coords.latitude,
-          position.coords.longitude,
-          position.coords.heading || 0
-        );
+        updateGPS(position.coords.latitude, position.coords.longitude);
       }
     },
     (error) => console.warn("Desktop GPS error:", error.message),
