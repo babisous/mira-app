@@ -20,10 +20,86 @@ function createLabelElement(anchor) {
     <div class="artwork-label-content">
       <div class="artwork-label-title">${anchor.artwork.title}</div>
       <div class="artwork-label-user">@${userName}</div>
+      <button class="artwork-route-btn">Itinéraire</button>
     </div>
   `;
 
   return labelEl;
+}
+
+/**
+ * Récupère et affiche l'itinéraire à pied
+ */
+async function showWalkingRoute(map, from, to, accessToken) {
+  const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${from[0]},${from[1]};${to[0]},${to[1]}?geometries=geojson&overview=full&steps=true&access_token=${accessToken}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.routes || data.routes.length === 0) {
+      console.log("No route found");
+      return null;
+    }
+
+    const route = data.routes[0].geometry;
+
+    // Supprimer l'ancien itinéraire s'il existe
+    if (map.getSource("route")) {
+      map.removeLayer("route-line");
+      map.removeSource("route");
+    }
+
+    // Ajouter le nouvel itinéraire
+    map.addSource("route", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: route,
+      },
+    });
+
+    map.addLayer({
+      id: "route-line",
+      type: "line",
+      source: "route",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round",
+      },
+      paint: {
+        "line-color": "#fff3b0",
+        "line-width": 5,
+        "line-opacity": 1,
+      },
+    }, "clusters");
+
+    // Ajuster la vue pour voir tout l'itinéraire
+    const coordinates = route.coordinates;
+    const bounds = coordinates.reduce(
+      (bounds, coord) => bounds.extend(coord),
+      new window._mapboxgl.LngLatBounds(coordinates[0], coordinates[0])
+    );
+
+    map.fitBounds(bounds, { padding: 80, pitch: 0, duration: 1000 });
+
+    // Retourner la durée en minutes
+    return Math.round(data.routes[0].duration / 60);
+  } catch (error) {
+    console.error("Error fetching route:", error);
+    return null;
+  }
+}
+
+/**
+ * Supprime l'itinéraire de la carte
+ */
+function clearRoute(map) {
+  if (map.getSource("route")) {
+    map.removeLayer("route-line");
+    map.removeSource("route");
+  }
 }
 
 /**
@@ -52,8 +128,11 @@ function getScreenDistance(map, lng, lat) {
 /**
  * Crée les labels pour tous les artworks avec affichage stable du plus proche
  */
-export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN }) {
+export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken }) {
   if (anchors.length === 0) return () => {};
+
+  // Rendre mapboxgl accessible dans showWalkingRoute
+  window._mapboxgl = mapboxgl;
 
   // État de sélection
   let selectedLabel = null;
@@ -95,9 +174,9 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN }) {
 
     map.flyTo({
       center: [anchor.longitude, anchor.latitude],
-      zoom: 24,
-      pitch: 70,
-      duration: 2000,
+      zoom: MAP_CONFIG.modelVisibilityZoom,
+      pitch: 0,
+      duration: 1000,
       essential: true,
     });
   };
@@ -111,6 +190,13 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN }) {
     if (selectedLabel.layer?.showSkyLine) {
       selectedLabel.layer.showSkyLine(false);
     }
+
+    // Supprimer l'itinéraire
+    clearRoute(map);
+
+    // Reset le bouton
+    const btn = selectedLabel.element.querySelector(".artwork-route-btn");
+    if (btn) btn.textContent = "Itinéraire";
 
     selectedLabel = null;
     console.log("Deselected");
@@ -152,10 +238,40 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN }) {
 
     // Click sur le label
     const content = labelEl.querySelector(".artwork-label-content");
-    content.addEventListener("click", () => {
+    content.addEventListener("click", (e) => {
+      if (e.target.classList.contains("artwork-route-btn")) return;
       console.log("Click sur label");
       clickedOnInteractive = true;
       selectArtwork(labelData);
+    });
+
+    // Click sur le bouton itinéraire
+    const routeBtn = labelEl.querySelector(".artwork-route-btn");
+    routeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      clickedOnInteractive = true;
+
+      if (!userState?.position) {
+        alert("Position non disponible. Activez la géolocalisation.");
+        return;
+      }
+
+      routeBtn.textContent = "Chargement...";
+      routeBtn.disabled = true;
+
+      const duration = await showWalkingRoute(
+        map,
+        userState.position,
+        [anchor.longitude, anchor.latitude],
+        accessToken
+      );
+
+      if (duration !== null) {
+        routeBtn.textContent = `${duration} min à pied`;
+      } else {
+        routeBtn.textContent = "Itinéraire";
+      }
+      routeBtn.disabled = false;
     });
 
     // Click sur la zone du modèle

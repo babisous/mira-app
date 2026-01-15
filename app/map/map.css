@@ -101,6 +101,75 @@
   white-space: nowrap;
 }
 
+.artwork-route-btn {
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: #fff;
+  color: #415eae;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.artwork-route-btn:hover {
+  background: #f0f0f0;
+}
+
+.artwork-route-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ========================================
+   Marqueur utilisateur
+   ======================================== */
+
+.user-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.user-marker-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #fff3b0;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.user-marker-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 243, 176, 0.4);
+  border-radius: 50%;
+  animation: pulse 2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
 /* ========================================
    Mapbox controls - Désactiver les clics
    ======================================== */
@@ -122,7 +191,7 @@ a.mapbox-improve-map {
    ======================================== */
 
 @media (max-width: 768px) {
-  .artwork-hover-zone {
+  .artwork-click-zone {
     width: 60px;
     height: 60px;
   }

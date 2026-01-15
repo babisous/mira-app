@@ -12,7 +12,7 @@ export const MAP_CONFIG = {
   maxZoom: 24,
 
   // Pitch (inclinaison caméra)
-  initialPitch: 60,
+  initialPitch: 0,
   maxPitch: 45,
   minPitch: 0,
   pitchZoomThreshold: {
@@ -20,8 +20,8 @@ export const MAP_CONFIG = {
     low: 10,   // En-dessous: pitch min
   },
 
-  // Visibilité des modèles
-  modelVisibilityZoom: 8,
+  // Visibilité des modèles (zoom minimum pour voir les modèles 3D)
+  modelVisibilityZoom: 16,
 
   // Scale des modèles selon le zoom
   modelScale: {
@@ -31,9 +31,9 @@ export const MAP_CONFIG = {
     scaleMax: 10,
   },
 
-  // Labels
-  labelVisibilityZoom: 14,
-  labelFullOpacityZoom: 18,
+  // Labels (même zoom que les modèles)
+  labelVisibilityZoom: 16,
+  labelFullOpacityZoom: 16,
   hoverZoneSize: 80,
 };
 
