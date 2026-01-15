@@ -1,5 +1,6 @@
 /**
  * Hook pour initialiser et gérer la carte Mapbox
+ * Supporte deux modes: Desktop (navigator.geolocation) et Unity (window.updateGPS)
  */
 
 import { useEffect, useRef, useCallback } from "react";
@@ -7,53 +8,134 @@ import { MAP_CONFIG } from "../utils/mapConfig";
 import { createArtworkLayer } from "../layers/createArtworkLayer";
 import { createArtworkLabels } from "../layers/createArtworkLabel";
 
+// État global pour la géolocalisation
+const gpsState = {
+  isUnityContext: false,
+  userMarker: null,
+  userPosition: null,
+  map: null,
+  mapboxgl: null,
+  isFirstPosition: true,
+};
+
 /**
- * Crée le marqueur de l'utilisateur
+ * Crée l'élément HTML du marqueur utilisateur avec support de rotation
  */
-function createUserMarker(mapboxgl, map, position) {
+function createUserMarkerElement() {
   const el = document.createElement("div");
   el.className = "user-marker";
-  el.innerHTML = `<div class="user-marker-dot"></div><div class="user-marker-pulse"></div>`;
-
-  return new mapboxgl.Marker({ element: el })
-    .setLngLat(position)
-    .addTo(map);
+  el.innerHTML = `
+    <div class="user-marker-heading"></div>
+    <div class="user-marker-dot"></div>
+    <div class="user-marker-pulse"></div>
+  `;
+  return el;
 }
 
 /**
- * Lance la géolocalisation et ajoute le marqueur + centre la carte quand disponible
- * Retourne un objet avec la position actuelle
+ * Fonction globale appelée par Unity (et par le fallback Desktop)
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @param {number} heading - Cap/orientation en degrés (0 = Nord)
  */
-function watchUserPosition(mapboxgl, map, cleanupRef) {
-  const userState = { position: null };
+function updateGPS(lat, lng, heading = 0) {
+  const { map, mapboxgl } = gpsState;
+  if (!map || !mapboxgl) {
+    console.warn("updateGPS: Map not ready");
+    return;
+  }
 
-  if (!navigator.geolocation) return userState;
+  gpsState.isUnityContext = true;
+  const coords = [lng, lat];
+  gpsState.userPosition = coords;
 
-  let userMarker = null;
+  // Créer le marqueur s'il n'existe pas
+  if (!gpsState.userMarker) {
+    const el = createUserMarkerElement();
+    gpsState.userMarker = new mapboxgl.Marker({ element: el })
+      .setLngLat(coords)
+      .addTo(map);
+  } else {
+    gpsState.userMarker.setLngLat(coords);
+  }
+
+  // Appliquer la rotation au marqueur (heading)
+  const markerEl = gpsState.userMarker.getElement();
+  const headingEl = markerEl.querySelector(".user-marker-heading");
+  if (headingEl) {
+    headingEl.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+  }
+
+  // Déplacer la caméra
+  if (gpsState.isFirstPosition) {
+    // Premier positionnement: centrer immédiatement
+    map.flyTo({
+      center: coords,
+      zoom: 17,
+      pitch: 60,
+      bearing: heading,
+      duration: 1500,
+    });
+    gpsState.isFirstPosition = false;
+  } else {
+    // Mises à jour suivantes: mouvement fluide
+    map.easeTo({
+      center: coords,
+      bearing: heading,
+      duration: 500,
+    });
+  }
+
+  console.log("GPS updated:", { lat, lng, heading });
+}
+
+// Exposer la fonction globalement pour Unity
+if (typeof window !== "undefined") {
+  window.updateGPS = updateGPS;
+}
+
+/**
+ * Démarre le GPS Desktop (fallback si Unity n'est pas actif)
+ */
+function startDesktopGPS(cleanupRef) {
+  if (!navigator.geolocation) {
+    console.warn("Geolocation not supported");
+    return;
+  }
 
   const watchId = navigator.geolocation.watchPosition(
     (position) => {
-      const coords = [position.coords.longitude, position.coords.latitude];
-      console.log("User position:", coords);
-      userState.position = coords;
-
-      if (!userMarker) {
-        userMarker = createUserMarker(mapboxgl, map, coords);
-        map.flyTo({ center: coords, duration: 1000 });
-      } else {
-        userMarker.setLngLat(coords);
+      // N'utiliser le GPS navigateur QUE si Unity n'est pas actif
+      if (!gpsState.isUnityContext) {
+        updateGPS(
+          position.coords.latitude,
+          position.coords.longitude,
+          position.coords.heading || 0
+        );
       }
     },
-    (error) => console.log("Geolocation error:", error.message),
-    { enableHighAccuracy: false, timeout: 30000, maximumAge: 30000 }
+    (error) => console.warn("Desktop GPS error:", error.message),
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 5000 }
   );
 
   cleanupRef.current.push(() => {
     navigator.geolocation.clearWatch(watchId);
-    userMarker?.remove();
+    if (gpsState.userMarker) {
+      gpsState.userMarker.remove();
+      gpsState.userMarker = null;
+    }
   });
+}
 
-  return userState;
+/**
+ * Retourne l'état de position utilisateur (pour les autres composants)
+ */
+function getUserState() {
+  return {
+    get position() {
+      return gpsState.userPosition;
+    },
+  };
 }
 
 /**
@@ -211,8 +293,17 @@ export function useMapbox({ containerRef, anchors, isReady }) {
 
     mapRef.current = map;
 
-    // Lancer la géolocalisation (non bloquant)
-    const userState = watchUserPosition(mapboxgl, map, cleanupRef);
+    // Stocker les références pour la fonction updateGPS globale
+    gpsState.map = map;
+    gpsState.mapboxgl = mapboxgl;
+    gpsState.isFirstPosition = true;
+    gpsState.isUnityContext = false;
+
+    // Lancer le GPS Desktop (fallback si Unity n'est pas actif)
+    startDesktopGPS(cleanupRef);
+
+    // Référence à l'état utilisateur pour les autres composants
+    const userState = getUserState();
 
     // Animation loop pour Tween
     function animate(time) {
@@ -272,6 +363,14 @@ export function useMapbox({ containerRef, anchors, isReady }) {
       cleanupRef.current.forEach((cleanup) => cleanup?.());
       cleanupRef.current = [];
       layersRef.current = [];
+
+      // Reset GPS state
+      gpsState.map = null;
+      gpsState.mapboxgl = null;
+      gpsState.userMarker = null;
+      gpsState.userPosition = null;
+      gpsState.isFirstPosition = true;
+      gpsState.isUnityContext = false;
 
       if (mapRef.current) {
         mapRef.current.remove();
