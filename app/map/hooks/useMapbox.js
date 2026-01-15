@@ -36,7 +36,7 @@ function createUserMarkerElement() {
  * Fonction globale appelée par Unity (et par le fallback Desktop)
  * @param {number} lat - Latitude
  * @param {number} lng - Longitude
- * @param {number} heading - Cap/orientation en degrés (0 = Nord)
+ * @param {number} heading - Cap/orientation en degrés (0 = Nord) - utilisé uniquement pour le marqueur
  */
 function updateGPS(lat, lng, heading = 0) {
   const { map, mapboxgl } = gpsState;
@@ -59,31 +59,20 @@ function updateGPS(lat, lng, heading = 0) {
     gpsState.userMarker.setLngLat(coords);
   }
 
-  // Appliquer la rotation au marqueur (heading)
+  // Appliquer la rotation au marqueur (heading) - uniquement sur le marqueur
   const markerEl = gpsState.userMarker.getElement();
   const headingEl = markerEl.querySelector(".user-marker-heading");
   if (headingEl) {
     headingEl.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
   }
 
-  // Déplacer la caméra
+  // Centrer la carte sur la position (sans modifier pitch/bearing)
   if (gpsState.isFirstPosition) {
-    // Premier positionnement: centrer immédiatement
     map.flyTo({
       center: coords,
-      zoom: 17,
-      pitch: 60,
-      bearing: heading,
-      duration: 1500,
+      duration: 1000,
     });
     gpsState.isFirstPosition = false;
-  } else {
-    // Mises à jour suivantes: mouvement fluide
-    map.easeTo({
-      center: coords,
-      bearing: heading,
-      duration: 500,
-    });
   }
 
   console.log("GPS updated:", { lat, lng, heading });
