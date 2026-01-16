@@ -20,7 +20,6 @@ function createLabelElement(anchor) {
     <div class="artwork-label-content">
       <div class="artwork-label-title">${anchor.artwork.title}</div>
       <div class="artwork-label-user">@${userName}</div>
-      <button class="artwork-route-btn">Itinéraire</button>
     </div>
   `;
 
@@ -30,7 +29,7 @@ function createLabelElement(anchor) {
 /**
  * Récupère et affiche l'itinéraire à pied
  */
-async function showWalkingRoute(map, from, to, accessToken) {
+export async function showWalkingRoute(map, from, to, accessToken) {
   const url = `https://api.mapbox.com/directions/v5/mapbox/walking/${from[0]},${from[1]};${to[0]},${to[1]}?geometries=geojson&overview=full&steps=true&access_token=${accessToken}`;
 
   try {
@@ -95,7 +94,7 @@ async function showWalkingRoute(map, from, to, accessToken) {
 /**
  * Supprime l'itinéraire de la carte
  */
-function clearRoute(map) {
+export function clearRoute(map) {
   if (map.getSource("route")) {
     map.removeLayer("route-line");
     map.removeSource("route");
@@ -128,7 +127,7 @@ function getScreenDistance(map, lng, lat) {
 /**
  * Crée les labels pour tous les artworks avec affichage stable du plus proche
  */
-export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken }) {
+export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken, onArtworkSelect }) {
   if (anchors.length === 0) return () => {};
 
   // Rendre mapboxgl accessible dans showWalkingRoute
@@ -155,22 +154,8 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
       layer.showSkyLine(true);
     }
 
-    // Animation de la caméra via Mapbox
-    console.log("flyTo start:", {
-      center: [anchor.longitude, anchor.latitude],
-      zoom: 24,
-      pitch: 70,
-      currentZoom: map.getZoom(),
-      currentCenter: map.getCenter(),
-    });
-
-    map.once("moveend", () => {
-      console.log("flyTo end:", {
-        zoom: map.getZoom(),
-        center: map.getCenter(),
-        pitch: map.getPitch(),
-      });
-    });
+    // Notifier la sélection (pour ouvrir la fiche détail)
+    onArtworkSelect?.(anchor.artwork);
 
     map.flyTo({
       center: [anchor.longitude, anchor.latitude],
@@ -183,7 +168,6 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
 
   // Fonction pour désélectionner
   const deselectArtwork = () => {
-    console.log("deselectArtwork - selectedLabel:", !!selectedLabel);
     if (!selectedLabel) return;
 
     // Cacher la ligne 3D
@@ -194,12 +178,7 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
     // Supprimer l'itinéraire
     clearRoute(map);
 
-    // Reset le bouton
-    const btn = selectedLabel.element.querySelector(".artwork-route-btn");
-    if (btn) btn.textContent = "Itinéraire";
-
     selectedLabel = null;
-    console.log("Deselected");
   };
 
   // Créer tous les labels et zones de click
@@ -238,40 +217,9 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
 
     // Click sur le label
     const content = labelEl.querySelector(".artwork-label-content");
-    content.addEventListener("click", (e) => {
-      if (e.target.classList.contains("artwork-route-btn")) return;
-      console.log("Click sur label");
+    content.addEventListener("click", () => {
       clickedOnInteractive = true;
       selectArtwork(labelData);
-    });
-
-    // Click sur le bouton itinéraire
-    const routeBtn = labelEl.querySelector(".artwork-route-btn");
-    routeBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      clickedOnInteractive = true;
-
-      if (!userState?.position) {
-        alert("Position non disponible. Activez la géolocalisation.");
-        return;
-      }
-
-      routeBtn.textContent = "Chargement...";
-      routeBtn.disabled = true;
-
-      const duration = await showWalkingRoute(
-        map,
-        userState.position,
-        [anchor.longitude, anchor.latitude],
-        accessToken
-      );
-
-      if (duration !== null) {
-        routeBtn.textContent = `${duration} min à pied`;
-      } else {
-        routeBtn.textContent = "Itinéraire";
-      }
-      routeBtn.disabled = false;
     });
 
     // Click sur la zone du modèle

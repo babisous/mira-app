@@ -8,21 +8,23 @@ import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useMapbox } from "../hooks/useMapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const MapView = forwardRef(function MapView({ anchors, loading, onMapReady }, ref) {
+const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onArtworkSelect }, ref) {
   const containerRef = useRef(null);
 
   // Initialisation de la carte
-  const { flyToArtwork } = useMapbox({
+  const { flyToArtwork, showRoute } = useMapbox({
     containerRef,
     anchors,
     isReady: !loading,
     onMapReady,
+    onArtworkSelect,
   });
 
-  // Exposer flyToArtwork au parent via ref
+  // Exposer flyToArtwork et showRoute au parent via ref
   useImperativeHandle(ref, () => ({
     flyToArtwork,
-  }), [flyToArtwork]);
+    showRoute,
+  }), [flyToArtwork, showRoute]);
 
   return (
     <div

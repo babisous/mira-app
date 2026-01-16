@@ -6,7 +6,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { MAP_CONFIG } from "../utils/mapConfig";
 import { createArtworkLayer } from "../layers/createArtworkLayer";
-import { createArtworkLabels } from "../layers/createArtworkLabel";
+import { createArtworkLabels, showWalkingRoute } from "../layers/createArtworkLabel";
 
 // État global pour la géolocalisation
 const gpsState = {
@@ -117,7 +117,7 @@ function getUserState() {
 /**
  * Crée les clusters d'artworks visibles au dézoom
  */
-function createArtworkClusters(map, anchors) {
+function createArtworkClusters(map, anchors, onArtworkSelect) {
   const PIN_MAX_ZOOM = MAP_CONFIG.modelVisibilityZoom;
 
   // Créer le GeoJSON des artworks
@@ -205,14 +205,25 @@ function createArtworkClusters(map, anchors) {
     });
   });
 
-  // Click sur pin individuel pour zoomer au niveau du modèle
+  // Click sur pin individuel pour zoomer et ouvrir la fiche
   map.on("click", "unclustered-point", (e) => {
-    const coordinates = e.features[0].geometry.coordinates.slice();
+    const feature = e.features[0];
+    const coordinates = feature.geometry.coordinates.slice();
+    const anchorId = feature.properties.id;
+
+    // Trouver l'anchor correspondant
+    const anchor = anchors.find((a) => a.id === anchorId);
+
     map.flyTo({
       center: coordinates,
       zoom: PIN_MAX_ZOOM,
       duration: 1000,
     });
+
+    // Ouvrir la fiche détail
+    if (anchor?.artwork && onArtworkSelect) {
+      onArtworkSelect(anchor.artwork);
+    }
   });
 
   // Curseur pointer sur clusters et pins
@@ -233,7 +244,7 @@ function createArtworkClusters(map, anchors) {
 /**
  * Hook d'initialisation de la carte Mapbox avec Three.js
  */
-export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
+export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtworkSelect }) {
   const mapRef = useRef(null);
   const cleanupRef = useRef([]);
   const layersRef = useRef([]);
@@ -247,6 +258,18 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
       zoom: MAP_CONFIG.modelVisibilityZoom,
       duration: 1500,
     });
+  }, []);
+
+  // Fonction pour afficher un itinéraire
+  const showRoute = useCallback(async (toAnchor) => {
+    if (!mapRef.current || !gpsState.userPosition) return null;
+
+    return showWalkingRoute(
+      mapRef.current,
+      gpsState.userPosition,
+      [toAnchor.longitude, toAnchor.latitude],
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    );
   }, []);
 
   // Initialisation de la carte
@@ -304,7 +327,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
       if (anchors.length === 0) return;
 
       // Créer les clusters (visibles au dézoom)
-      createArtworkClusters(map, anchors);
+      createArtworkClusters(map, anchors, onArtworkSelect);
 
       // Créer les layers 3D pour chaque anchor
       const layers = [];
@@ -332,6 +355,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
         TWEEN,
         userState,
         accessToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
+        onArtworkSelect,
       });
       cleanupRef.current.push(cleanupLabels);
     });
@@ -342,7 +366,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
     });
 
     return map;
-  }, [anchors, containerRef, onMapReady]);
+  }, [anchors, containerRef, onMapReady, onArtworkSelect]);
 
   // Effet d'initialisation
   useEffect(() => {
@@ -371,5 +395,5 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
     };
   }, [isReady, initializeMap]);
 
-  return { map: mapRef.current, flyToArtwork };
+  return { map: mapRef.current, flyToArtwork, showRoute };
 }

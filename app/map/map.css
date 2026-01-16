@@ -101,28 +101,6 @@
   white-space: nowrap;
 }
 
-.artwork-route-btn {
-  margin-top: 6px;
-  padding: 4px 10px;
-  background: #fff;
-  color: #415eae;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.artwork-route-btn:hover {
-  background: #f0f0f0;
-}
-
-.artwork-route-btn:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
 /* ========================================
    Marqueur utilisateur
    ======================================== */
@@ -334,5 +312,219 @@ a.mapbox-improve-map {
     width: calc(100% - 32px);
     left: 16px;
     right: 16px;
+  }
+}
+
+/* ========================================
+   Fiche détail artwork - Desktop sidebar
+   ======================================== */
+
+.artwork-detail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 360px;
+  height: 100%;
+  background: #415eae;
+  border-left: 2px solid #fff;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out forwards;
+}
+
+.artwork-detail.closing {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.artwork-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 16px 16px 24px;
+}
+
+.artwork-detail-header .artwork-detail-title {
+  margin: 0;
+}
+
+.artwork-detail-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  transition: opacity 0.2s;
+}
+
+.artwork-detail-close:hover {
+  opacity: 0.8;
+}
+
+.artwork-detail-content {
+  flex: 1;
+  padding: 0 24px 24px;
+  overflow-y: auto;
+}
+
+.artwork-detail-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.artwork-detail-artist {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 16px;
+}
+
+.artwork-detail-model {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid #fff;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.model-viewer {
+  width: 100%;
+  height: 100%;
+}
+
+.artwork-detail-section {
+  margin-bottom: 24px;
+}
+
+.artwork-detail-section h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 12px;
+}
+
+.artwork-detail-section p {
+  font-size: 14px;
+  color: white;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.artwork-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.artwork-detail-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.artwork-detail-info-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.artwork-detail-info-value {
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+}
+
+.artwork-detail-route-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: #fff;
+  color: #415eae;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto;
+}
+
+.artwork-detail-route-btn:hover {
+  background: #f0f0f0;
+}
+
+.artwork-detail-route-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ========================================
+   Fiche détail artwork - Mobile bottom sheet
+   ======================================== */
+
+@media (max-width: 768px) {
+  .artwork-detail {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-left: none;
+    border-top: 2px solid #fff;
+    animation: slideInUp 0.3s ease-out forwards;
+  }
+
+  .artwork-detail.closing {
+    animation: slideOutDown 0.3s ease-in forwards;
+  }
+
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideOutDown {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  .artwork-detail-header {
+    padding: 12px 16px;
+  }
+
+  .artwork-detail-content {
+    padding: 0 16px 16px;
+  }
+
+  .artwork-detail-title {
+    font-size: 20px;
   }
 }
