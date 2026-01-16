@@ -6,7 +6,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { MAP_CONFIG } from "../utils/mapConfig";
 import { createArtworkLayer } from "../layers/createArtworkLayer";
-import { createArtworkLabels, showWalkingRoute } from "../layers/createArtworkLabel";
+import { createArtworkLabels, showWalkingRoute, clearRoute } from "../layers/createArtworkLabel";
 
 // État global pour la géolocalisation
 const gpsState = {
@@ -117,7 +117,7 @@ function getUserState() {
 /**
  * Crée les clusters d'artworks visibles au dézoom
  */
-function createArtworkClusters(map, anchors, onArtworkSelect) {
+function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
   const PIN_MAX_ZOOM = MAP_CONFIG.modelVisibilityZoom;
 
   // Créer le GeoJSON des artworks
@@ -205,24 +205,14 @@ function createArtworkClusters(map, anchors, onArtworkSelect) {
     });
   });
 
-  // Click sur pin individuel pour zoomer et ouvrir la fiche
+  // Click sur pin individuel pour sélectionner l'artwork
   map.on("click", "unclustered-point", (e) => {
     const feature = e.features[0];
-    const coordinates = feature.geometry.coordinates.slice();
     const anchorId = feature.properties.id;
 
-    // Trouver l'anchor correspondant
-    const anchor = anchors.find((a) => a.id === anchorId);
-
-    map.flyTo({
-      center: coordinates,
-      zoom: PIN_MAX_ZOOM,
-      duration: 1000,
-    });
-
-    // Ouvrir la fiche détail
-    if (anchor?.artwork && onArtworkSelect) {
-      onArtworkSelect(anchor.artwork);
+    // Utiliser la fonction de sélection des labels (déclenche skyLine + zoom + fiche)
+    if (selectByAnchorIdRef?.current) {
+      selectByAnchorIdRef.current(anchorId);
     }
   });
 
@@ -248,16 +238,16 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
   const mapRef = useRef(null);
   const cleanupRef = useRef([]);
   const layersRef = useRef([]);
+  const selectByAnchorIdRef = useRef(null);
 
-  // Fonction pour voler vers un artwork
-  const flyToArtwork = useCallback((anchor) => {
-    if (!mapRef.current || !anchor) return;
+  // Fonction pour sélectionner un artwork (utilisée par la recherche)
+  const selectArtwork = useCallback((anchor) => {
+    if (!anchor) return;
 
-    mapRef.current.flyTo({
-      center: [anchor.longitude, anchor.latitude],
-      zoom: MAP_CONFIG.modelVisibilityZoom,
-      duration: 1500,
-    });
+    // Utiliser la fonction de sélection des labels si disponible
+    if (selectByAnchorIdRef.current) {
+      selectByAnchorIdRef.current(anchor.id);
+    }
   }, []);
 
   // Fonction pour afficher un itinéraire
@@ -270,6 +260,12 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       [toAnchor.longitude, toAnchor.latitude],
       process.env.NEXT_PUBLIC_MAPBOX_TOKEN
     );
+  }, []);
+
+  // Fonction pour supprimer l'itinéraire
+  const clearMapRoute = useCallback(() => {
+    if (!mapRef.current) return;
+    clearRoute(mapRef.current);
   }, []);
 
   // Initialisation de la carte
@@ -327,7 +323,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       if (anchors.length === 0) return;
 
       // Créer les clusters (visibles au dézoom)
-      createArtworkClusters(map, anchors, onArtworkSelect);
+      createArtworkClusters(map, anchors, selectByAnchorIdRef);
 
       // Créer les layers 3D pour chaque anchor
       const layers = [];
@@ -347,7 +343,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       layersRef.current = layers;
 
       // Créer les labels avec callback pour l'animation
-      const cleanupLabels = createArtworkLabels({
+      const { cleanup: cleanupLabels, selectByAnchorId } = createArtworkLabels({
         mapboxgl,
         map,
         anchors: anchors.filter((a) => a.artwork?.url),
@@ -357,6 +353,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
         accessToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
         onArtworkSelect,
       });
+      selectByAnchorIdRef.current = selectByAnchorId;
       cleanupRef.current.push(cleanupLabels);
     });
 
@@ -395,5 +392,5 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
     };
   }, [isReady, initializeMap]);
 
-  return { map: mapRef.current, flyToArtwork, showRoute };
+  return { map: mapRef.current, selectArtwork, showRoute, clearRoute: clearMapRoute };
 }

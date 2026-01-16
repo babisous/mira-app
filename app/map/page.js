@@ -10,6 +10,7 @@ import { useSearch } from "./hooks/useSearch";
 import MapView from "./components/MapView";
 import SearchBar from "./components/SearchBar";
 import ArtworkDetail from "./components/ArtworkDetail";
+import RouteStatus from "./components/RouteStatus";
 import "./map.css";
 
 export default function MapPage() {
@@ -18,13 +19,12 @@ export default function MapPage() {
   const mapRef = useRef(null);
   const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [selectedAnchor, setSelectedAnchor] = useState(null);
+  const [activeRoute, setActiveRoute] = useState(null); // { duration, artworkTitle }
 
   // Handler de selection d'un resultat de recherche
   const handleSelectResult = useCallback((artwork) => {
     if (artwork.anchor && mapRef.current) {
-      mapRef.current.flyToArtwork(artwork.anchor);
-      setSelectedArtwork(artwork);
-      setSelectedAnchor(artwork.anchor);
+      mapRef.current.selectArtwork(artwork.anchor);
     }
     clearSearch();
   }, [clearSearch]);
@@ -35,6 +35,8 @@ export default function MapPage() {
     const anchor = anchors.find((a) => a.artworkId === artwork.id);
     setSelectedArtwork(artwork);
     setSelectedAnchor(anchor);
+    // Fermer l'itinéraire actif quand on sélectionne un nouvel artwork
+    setActiveRoute(null);
   }, [anchors]);
 
   // Fermer la fiche détail
@@ -44,9 +46,23 @@ export default function MapPage() {
   }, []);
 
   // Demander un itinéraire
-  const handleRequestRoute = useCallback(async (anchor) => {
+  const handleRequestRoute = useCallback(async (anchor, artworkTitle) => {
     if (!mapRef.current) return null;
-    return mapRef.current.showRoute(anchor);
+    const duration = await mapRef.current.showRoute(anchor);
+    if (duration) {
+      setActiveRoute({ duration, artworkTitle });
+      setSelectedArtwork(null); // Fermer la fiche
+      setSelectedAnchor(null);
+    }
+    return duration;
+  }, []);
+
+  // Annuler l'itinéraire
+  const handleCancelRoute = useCallback(() => {
+    if (mapRef.current) {
+      mapRef.current.clearRoute();
+    }
+    setActiveRoute(null);
   }, []);
 
   if (loading) {
@@ -88,12 +104,19 @@ export default function MapPage() {
         loading={loading}
         onArtworkSelect={handleArtworkSelect}
       />
-      {selectedArtwork && (
+      {selectedArtwork && !activeRoute && (
         <ArtworkDetail
           artwork={selectedArtwork}
           anchor={selectedAnchor}
           onClose={handleCloseDetail}
           onRequestRoute={handleRequestRoute}
+        />
+      )}
+      {activeRoute && (
+        <RouteStatus
+          duration={activeRoute.duration}
+          artworkTitle={activeRoute.artworkTitle}
+          onCancel={handleCancelRoute}
         />
       )}
     </div>

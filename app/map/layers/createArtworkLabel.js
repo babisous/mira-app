@@ -128,7 +128,7 @@ function getScreenDistance(map, lng, lat) {
  * Crée les labels pour tous les artworks avec affichage stable du plus proche
  */
 export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken, onArtworkSelect }) {
-  if (anchors.length === 0) return () => {};
+  if (anchors.length === 0) return { cleanup: () => {}, selectByAnchorId: () => {} };
 
   // Rendre mapboxgl accessible dans showWalkingRoute
   window._mapboxgl = mapboxgl;
@@ -159,7 +159,7 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
 
     map.flyTo({
       center: [anchor.longitude, anchor.latitude],
-      zoom: MAP_CONFIG.modelVisibilityZoom,
+      zoom: 20,
       pitch: 0,
       duration: 1000,
       essential: true,
@@ -314,8 +314,17 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
   map.on("zoom", updateLabels);
   updateLabels();
 
+  // Fonction pour sélectionner par ID d'anchor (appelée depuis pin ou search)
+  const selectByAnchorId = (anchorId) => {
+    const label = labels.find((l) => l.anchor.id === anchorId);
+    if (label) {
+      clickedOnInteractive = true;
+      selectArtwork(label);
+    }
+  };
+
   // Cleanup
-  return () => {
+  const cleanup = () => {
     map.off("move", updateLabels);
     map.off("zoom", updateLabels);
     document.removeEventListener("click", handleDeselect);
@@ -324,4 +333,6 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
       label.clickMarker.remove();
     });
   };
+
+  return { cleanup, selectByAnchorId };
 }

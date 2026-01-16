@@ -11,7 +11,6 @@ import ModelViewer from "./ModelViewer";
 
 export default function ArtworkDetail({ artwork, anchor, onClose, onRequestRoute }) {
   const [routeLoading, setRouteLoading] = useState(false);
-  const [routeDuration, setRouteDuration] = useState(null);
   const [isClosing, setIsClosing] = useState(false);
 
   if (!artwork) return null;
@@ -25,8 +24,7 @@ export default function ArtworkDetail({ artwork, anchor, onClose, onRequestRoute
     if (!onRequestRoute || !anchor) return;
 
     setRouteLoading(true);
-    const duration = await onRequestRoute(anchor);
-    setRouteDuration(duration);
+    await onRequestRoute(anchor, artwork.title);
     setRouteLoading(false);
   };
 
@@ -95,11 +93,7 @@ export default function ArtworkDetail({ artwork, anchor, onClose, onRequestRoute
           onClick={handleRouteClick}
           disabled={routeLoading}
         >
-          {routeLoading
-            ? "Chargement..."
-            : routeDuration
-            ? `${routeDuration} min à pied`
-            : "Itinéraire"}
+          {routeLoading ? "Chargement..." : "Itinéraire"}
         </button>
       </div>
     </div>

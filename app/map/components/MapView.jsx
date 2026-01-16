@@ -12,7 +12,7 @@ const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onAr
   const containerRef = useRef(null);
 
   // Initialisation de la carte
-  const { flyToArtwork, showRoute } = useMapbox({
+  const { selectArtwork, showRoute, clearRoute } = useMapbox({
     containerRef,
     anchors,
     isReady: !loading,
@@ -20,11 +20,12 @@ const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onAr
     onArtworkSelect,
   });
 
-  // Exposer flyToArtwork et showRoute au parent via ref
+  // Exposer selectArtwork, showRoute et clearRoute au parent via ref
   useImperativeHandle(ref, () => ({
-    flyToArtwork,
+    selectArtwork,
     showRoute,
-  }), [flyToArtwork, showRoute]);
+    clearRoute,
+  }), [selectArtwork, showRoute, clearRoute]);
 
   return (
     <div
