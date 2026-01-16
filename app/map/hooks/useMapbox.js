@@ -233,10 +233,21 @@ function createArtworkClusters(map, anchors) {
 /**
  * Hook d'initialisation de la carte Mapbox avec Three.js
  */
-export function useMapbox({ containerRef, anchors, isReady }) {
+export function useMapbox({ containerRef, anchors, isReady, onMapReady }) {
   const mapRef = useRef(null);
   const cleanupRef = useRef([]);
   const layersRef = useRef([]);
+
+  // Fonction pour voler vers un artwork
+  const flyToArtwork = useCallback((anchor) => {
+    if (!mapRef.current || !anchor) return;
+
+    mapRef.current.flyTo({
+      center: [anchor.longitude, anchor.latitude],
+      zoom: MAP_CONFIG.modelVisibilityZoom,
+      duration: 1500,
+    });
+  }, []);
 
   // Initialisation de la carte
   const initializeMap = useCallback(async () => {
@@ -325,8 +336,13 @@ export function useMapbox({ containerRef, anchors, isReady }) {
       cleanupRef.current.push(cleanupLabels);
     });
 
+    // Notifier que la map est prête
+    map.on("load", () => {
+      onMapReady?.();
+    });
+
     return map;
-  }, [anchors, containerRef]);
+  }, [anchors, containerRef, onMapReady]);
 
   // Effet d'initialisation
   useEffect(() => {
@@ -355,5 +371,5 @@ export function useMapbox({ containerRef, anchors, isReady }) {
     };
   }, [isReady, initializeMap]);
 
-  return { map: mapRef.current };
+  return { map: mapRef.current, flyToArtwork };
 }

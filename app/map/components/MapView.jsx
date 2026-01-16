@@ -4,19 +4,25 @@
  * Composant de la carte Mapbox avec les artworks 3D
  */
 
-import { useRef } from "react";
+import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useMapbox } from "../hooks/useMapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-export default function MapView({ anchors, loading }) {
+const MapView = forwardRef(function MapView({ anchors, loading, onMapReady }, ref) {
   const containerRef = useRef(null);
 
   // Initialisation de la carte
-  useMapbox({
+  const { flyToArtwork } = useMapbox({
     containerRef,
     anchors,
     isReady: !loading,
+    onMapReady,
   });
+
+  // Exposer flyToArtwork au parent via ref
+  useImperativeHandle(ref, () => ({
+    flyToArtwork,
+  }), [flyToArtwork]);
 
   return (
     <div
@@ -25,4 +31,6 @@ export default function MapView({ anchors, loading }) {
       aria-label="Carte des artworks 3D"
     />
   );
-}
+});
+
+export default MapView;

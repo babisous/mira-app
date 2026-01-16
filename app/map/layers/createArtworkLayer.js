@@ -42,9 +42,9 @@ function computeModelTransform(mapboxgl, THREE, anchor) {
 }
 
 /**
- * Construit l'URL proxy pour le modèle
+ * Construit l'URL proxy pour le modèle (contourne CORS)
  */
-function getModelProxyUrl(artworkUrl) {
+function getModelUrl(artworkUrl) {
   const filename = artworkUrl.split("/").pop();
   return `${process.env.NEXT_PUBLIC_API_URL}/proxy/models/${filename}`;
 }
@@ -61,7 +61,7 @@ export function createArtworkLayer({
   onVisibilityChange,
 }) {
   const modelTransform = computeModelTransform(mapboxgl, THREE, anchor);
-  const modelUrl = getModelProxyUrl(anchor.artwork.url);
+  const modelUrl = getModelUrl(anchor.artwork.url);
   const layerId = `3d-model-${anchor.id || index}`;
 
   // État du layer
