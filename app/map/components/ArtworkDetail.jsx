@@ -2,23 +2,20 @@
 
 /**
  * Fiche détail d'un artwork
- * Desktop: sidebar à droite
- * Mobile: bottom sheet
+ * Utilise SlidePanel comme container
  */
 
 import { useState } from "react";
+import SlidePanel from "./SlidePanel";
 import ModelViewer from "./ModelViewer";
+import { getUserDisplayName } from "@/lib/utils/userUtils";
 
-export default function ArtworkDetail({ artwork, anchor, onClose, onRequestRoute }) {
+export default function ArtworkDetail({ artwork, anchor, isOpen, onClose, onRequestRoute }) {
   const [routeLoading, setRouteLoading] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
 
   if (!artwork) return null;
 
-  const userName =
-    artwork.user?.name ||
-    artwork.user?.email?.split("@")[0] ||
-    "Artiste inconnu";
+  const userName = getUserDisplayName(artwork.user, "Artiste inconnu");
 
   const handleRouteClick = async () => {
     if (!onRequestRoute || !anchor) return;
@@ -28,74 +25,46 @@ export default function ArtworkDetail({ artwork, anchor, onClose, onRequestRoute
     setRouteLoading(false);
   };
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
-
   return (
-    <div className={`artwork-detail ${isClosing ? "closing" : ""}`}>
-      <div className="artwork-detail-header">
-        <h2 className="artwork-detail-title">{artwork.title}</h2>
-        <button className="artwork-detail-close" onClick={handleClose} aria-label="Fermer">
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-      </div>
+    <SlidePanel isOpen={isOpen} onClose={onClose} title={artwork.title}>
+      <p className="artwork-detail__artist">@{userName}</p>
 
-      <div className="artwork-detail-content">
-        <p className="artwork-detail-artist">@{userName}</p>
+      {artwork.url && (
+        <div className="artwork-detail__model">
+          <ModelViewer modelUrl={artwork.url} />
+        </div>
+      )}
 
-        {artwork.url && (
-          <div className="artwork-detail-model">
-            <ModelViewer modelUrl={artwork.url} />
-          </div>
-        )}
+      {artwork.description && (
+        <div className="artwork-detail__section">
+          <h3>Description</h3>
+          <p>{artwork.description}</p>
+        </div>
+      )}
 
-        {artwork.description && (
-          <div className="artwork-detail-section">
-            <h3>Description</h3>
-            <p>{artwork.description}</p>
-          </div>
-        )}
-
-        <div className="artwork-detail-section">
-          <h3>Informations</h3>
-          <div className="artwork-detail-info">
-            <div className="artwork-detail-info-row">
-              <span className="artwork-detail-info-label">Date</span>
-              <span className="artwork-detail-info-value">
-                {new Date(artwork.createdAt).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
+      <div className="artwork-detail__section">
+        <h3>Informations</h3>
+        <div className="artwork-detail__info">
+          <div className="artwork-detail__info-row">
+            <span className="artwork-detail__info-label">Date</span>
+            <span className="artwork-detail__info-value">
+              {new Date(artwork.createdAt).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
           </div>
         </div>
-
-        <button
-          className="artwork-detail-route-btn"
-          onClick={handleRouteClick}
-          disabled={routeLoading}
-        >
-          {routeLoading ? "Chargement..." : "Itinéraire"}
-        </button>
       </div>
-    </div>
+
+      <button
+        className="artwork-detail__route-btn"
+        onClick={handleRouteClick}
+        disabled={routeLoading}
+      >
+        {routeLoading ? "Chargement..." : "Itinéraire"}
+      </button>
+    </SlidePanel>
   );
 }

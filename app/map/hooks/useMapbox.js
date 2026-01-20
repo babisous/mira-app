@@ -106,10 +106,13 @@ function startDesktopGPS(cleanupRef) {
 /**
  * Retourne l'état de position utilisateur (pour les autres composants)
  */
-function getUserState() {
+export function getUserState() {
   return {
     get position() {
       return gpsState.userPosition;
+    },
+    get isUnityContext() {
+      return gpsState.isUnityContext;
     },
   };
 }
@@ -234,7 +237,7 @@ function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
 /**
  * Hook d'initialisation de la carte Mapbox avec Three.js
  */
-export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtworkSelect }) {
+export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtworkSelect, onRequestRoute }) {
   const mapRef = useRef(null);
   const cleanupRef = useRef([]);
   const layersRef = useRef([]);
@@ -352,6 +355,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
         userState,
         accessToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
         onArtworkSelect,
+        onRequestRoute,
       });
       selectByAnchorIdRef.current = selectByAnchorId;
       cleanupRef.current.push(cleanupLabels);
@@ -363,7 +367,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
     });
 
     return map;
-  }, [anchors, containerRef, onMapReady, onArtworkSelect]);
+  }, [anchors, containerRef, onMapReady, onArtworkSelect, onRequestRoute]);
 
   // Effet d'initialisation
   useEffect(() => {

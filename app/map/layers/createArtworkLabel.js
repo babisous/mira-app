@@ -3,23 +3,37 @@
  */
 
 import { MAP_CONFIG, getLabelOpacity } from "../utils/mapConfig";
+import { getUserDisplayName } from "@/lib/utils/userUtils";
 
 /**
- * Crée l'élément label HTML
+ * Crée l'élément label HTML avec boutons d'action
  */
 function createLabelElement(anchor) {
   const labelEl = document.createElement("div");
   labelEl.className = "artwork-label";
 
-  const userName =
-    anchor.artwork.user?.name ||
-    anchor.artwork.user?.email?.split("@")[0] ||
-    "anonymous";
+  const userName = getUserDisplayName(anchor.artwork.user, "anonymous");
 
   labelEl.innerHTML = `
     <div class="artwork-label-content">
-      <div class="artwork-label-title">${anchor.artwork.title}</div>
-      <div class="artwork-label-user">@${userName}</div>
+      <div class="artwork-label-info">
+        <div class="artwork-label-title">${anchor.artwork.title}</div>
+        <div class="artwork-label-user">@${userName}</div>
+      </div>
+      <div class="artwork-label-actions">
+        <button class="artwork-label-btn artwork-label-btn--info" aria-label="Détails">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+        </button>
+        <button class="artwork-label-btn artwork-label-btn--route" aria-label="Itinéraire">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
+        </button>
+      </div>
     </div>
   `;
 
@@ -127,7 +141,7 @@ function getScreenDistance(map, lng, lat) {
 /**
  * Crée les labels pour tous les artworks avec affichage stable du plus proche
  */
-export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken, onArtworkSelect }) {
+export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, userState, accessToken, onArtworkSelect, onRequestRoute }) {
   if (anchors.length === 0) return { cleanup: () => {}, selectByAnchorId: () => {} };
 
   // Rendre mapboxgl accessible dans showWalkingRoute
@@ -137,26 +151,35 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
   let selectedLabel = null;
   let clickedOnInteractive = false;
 
-  // Fonction pour sélectionner un artwork
-  const selectArtwork = (label) => {
-    if (selectedLabel === label) return;
+  // Fonction pour sélectionner un artwork (afficher le label avec actions)
+  const selectArtwork = (label, openDetail = false) => {
+    const isSameLabel = selectedLabel === label;
 
-    // Désélectionner l'ancien
-    if (selectedLabel?.layer?.showSkyLine) {
-      selectedLabel.layer.showSkyLine(false);
+    // Désélectionner l'ancien si différent
+    if (selectedLabel && !isSameLabel) {
+      if (selectedLabel.layer?.showSkyLine) {
+        selectedLabel.layer.showSkyLine(false);
+      }
+      selectedLabel.element.classList.remove("selected");
     }
 
     selectedLabel = label;
-    const { anchor, layer } = label;
+    const { anchor, layer, element } = label;
 
     // Activer la ligne 3D depuis le modèle
     if (layer?.showSkyLine) {
       layer.showSkyLine(true);
     }
 
-    // Notifier la sélection (pour ouvrir la fiche détail)
-    onArtworkSelect?.(anchor.artwork);
+    // Marquer comme sélectionné (pour afficher les actions)
+    element.classList.add("selected");
 
+    // Si demandé, ouvrir la fiche détail
+    if (openDetail) {
+      onArtworkSelect?.(anchor.artwork);
+    }
+
+    // Toujours fly vers l'artwork (même si déjà sélectionné)
     map.flyTo({
       center: [anchor.longitude, anchor.latitude],
       zoom: 20,
@@ -174,6 +197,9 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
     if (selectedLabel.layer?.showSkyLine) {
       selectedLabel.layer.showSkyLine(false);
     }
+
+    // Retirer la classe selected
+    selectedLabel.element.classList.remove("selected");
 
     // Supprimer l'itinéraire
     clearRoute(map);
@@ -215,16 +241,32 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
       layer,
     };
 
-    // Click sur le label
-    const content = labelEl.querySelector(".artwork-label-content");
-    content.addEventListener("click", () => {
+    // Click sur la partie info du label (titre/user)
+    const infoSection = labelEl.querySelector(".artwork-label-info");
+    infoSection.addEventListener("click", (e) => {
+      e.stopPropagation();
       clickedOnInteractive = true;
       selectArtwork(labelData);
     });
 
+    // Click sur le bouton info (ouvre la fiche détail)
+    const infoBtn = labelEl.querySelector(".artwork-label-btn--info");
+    infoBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      clickedOnInteractive = true;
+      onArtworkSelect?.(anchor.artwork);
+    });
+
+    // Click sur le bouton itinéraire
+    const routeBtn = labelEl.querySelector(".artwork-label-btn--route");
+    routeBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      clickedOnInteractive = true;
+      onRequestRoute?.(anchor, anchor.artwork.title);
+    });
+
     // Click sur la zone du modèle
     clickZone.addEventListener("click", () => {
-      console.log("Click sur zone modèle");
       clickedOnInteractive = true;
       selectArtwork(labelData);
     });
@@ -234,13 +276,10 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
 
   // Click pour désélectionner
   const handleDeselect = () => {
-    console.log("handleDeselect - clickedOnInteractive:", clickedOnInteractive, "selectedLabel:", !!selectedLabel);
     if (clickedOnInteractive) {
       clickedOnInteractive = false;
-      console.log("Reset flag, skip deselect");
       return;
     }
-    console.log("Deselecting...");
     deselectArtwork();
   };
   document.addEventListener("click", handleDeselect);

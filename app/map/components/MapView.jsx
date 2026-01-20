@@ -8,7 +8,7 @@ import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useMapbox } from "../hooks/useMapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onArtworkSelect }, ref) {
+const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onArtworkSelect, onRequestRoute }, ref) {
   const containerRef = useRef(null);
 
   // Initialisation de la carte
@@ -18,6 +18,7 @@ const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onAr
     isReady: !loading,
     onMapReady,
     onArtworkSelect,
+    onRequestRoute,
   });
 
   // Exposer selectArtwork, showRoute et clearRoute au parent via ref
