@@ -88,24 +88,48 @@
 }
 
 .artwork-label-actions {
-  display: none;
-  border-left: 2px solid #fff;
-}
-
-.artwork-label.selected .artwork-label-actions {
   display: flex;
+  border-left: 2px solid #fff;
+  overflow: hidden;
 }
 
 .artwork-label-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  width: 0;
+  padding: 0;
   background: none;
   border: none;
   color: white;
   cursor: pointer;
-  transition: background 0.15s;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: width 0.2s ease-out, opacity 0.2s ease-out, transform 0.2s ease-out, background 0.15s;
+}
+
+/* Animation d'ouverture - info d'abord, puis route */
+.artwork-label.selected .artwork-label-btn--info {
+  width: 40px;
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0s;
+}
+
+.artwork-label.selected .artwork-label-btn--route {
+  width: 40px;
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.1s;
+}
+
+/* Animation de fermeture - route d'abord, puis info */
+.artwork-label:not(.selected) .artwork-label-btn--route {
+  transition-delay: 0s;
+}
+
+.artwork-label:not(.selected) .artwork-label-btn--info {
+  transition-delay: 0.1s;
 }
 
 .artwork-label-btn:hover {
@@ -1303,7 +1327,7 @@ a.mapbox-improve-map {
     font-size: 10px;
   }
 
-  .artwork-label-btn {
+  .artwork-label.selected .artwork-label-btn {
     width: 36px;
   }
 

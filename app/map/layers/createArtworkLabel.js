@@ -150,10 +150,17 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
   // État de sélection
   let selectedLabel = null;
   let clickedOnInteractive = false;
+  let selectionTimeout = null;
 
   // Fonction pour sélectionner un artwork (afficher le label avec actions)
   const selectArtwork = (label, openDetail = false) => {
     const isSameLabel = selectedLabel === label;
+
+    // Annuler le timeout précédent
+    if (selectionTimeout) {
+      clearTimeout(selectionTimeout);
+      selectionTimeout = null;
+    }
 
     // Désélectionner l'ancien si différent
     if (selectedLabel && !isSameLabel) {
@@ -171,8 +178,9 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
       layer.showSkyLine(true);
     }
 
-    // Marquer comme sélectionné (pour afficher les actions)
-    element.classList.add("selected");
+    // Forcer le label visible immédiatement
+    element.classList.add("visible");
+    element.style.setProperty("--label-opacity", 1);
 
     // Si demandé, ouvrir la fiche détail
     if (openDetail) {
@@ -187,10 +195,21 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
       duration: 1000,
       essential: true,
     });
+
+    // Déployer les boutons après un délai (label apparaît d'abord)
+    selectionTimeout = setTimeout(() => {
+      element.classList.add("selected");
+    }, 400);
   };
 
   // Fonction pour désélectionner
   const deselectArtwork = () => {
+    // Annuler le timeout de déploiement
+    if (selectionTimeout) {
+      clearTimeout(selectionTimeout);
+      selectionTimeout = null;
+    }
+
     if (!selectedLabel) return;
 
     // Cacher la ligne 3D
@@ -364,6 +383,9 @@ export function createArtworkLabels({ mapboxgl, map, anchors, layers, TWEEN, use
 
   // Cleanup
   const cleanup = () => {
+    if (selectionTimeout) {
+      clearTimeout(selectionTimeout);
+    }
     map.off("move", updateLabels);
     map.off("zoom", updateLabels);
     document.removeEventListener("click", handleDeselect);
