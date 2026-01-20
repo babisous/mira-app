@@ -7,11 +7,12 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { X } from "lucide-react";
+import { X, ArrowLeft } from "lucide-react";
 
 export default function SlidePanel({
   isOpen,
   onClose,
+  onBack,
   title,
   children,
   showCloseButton = true
@@ -42,7 +43,18 @@ export default function SlidePanel({
   return (
     <div className={`slide-panel ${isClosing ? "slide-panel--closing" : ""}`}>
       <div className="slide-panel__header">
-        <h2 className="slide-panel__title">{title}</h2>
+        <div className="slide-panel__title-wrapper">
+          {onBack && (
+            <button
+              className="slide-panel__back"
+              onClick={onBack}
+              aria-label="Retour"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+          <h2 className="slide-panel__title">{title}</h2>
+        </div>
         {showCloseButton && (
           <button
             className="slide-panel__close"

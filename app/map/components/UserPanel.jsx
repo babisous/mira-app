@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import SlidePanel from "./SlidePanel";
-import { Eye, EyeOff, LogOut, Box, MapPin, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, LogOut, MapPin, ChevronRight } from "lucide-react";
 import { getUserDisplayName } from "@/lib/utils/userUtils";
 
 export default function UserPanel({ isOpen, onClose, onNavigate }) {
@@ -96,14 +96,6 @@ export default function UserPanel({ isOpen, onClose, onNavigate }) {
         </div>
 
         <nav className="user-panel__nav">
-          <button
-            className="user-panel__nav-item"
-            onClick={() => onNavigate("library")}
-          >
-            <Box size={20} />
-            <span>Bibliothèque</span>
-            <ChevronRight size={18} className="user-panel__nav-arrow" />
-          </button>
           <button
             className="user-panel__nav-item"
             onClick={() => onNavigate("placed")}

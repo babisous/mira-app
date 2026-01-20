@@ -10,8 +10,8 @@ import { useSearch } from "./hooks/useSearch";
 import MapView from "./components/MapView";
 import NavButtons from "./components/NavButtons";
 import SearchPanel from "./components/SearchPanel";
-import LibraryPanel from "./components/LibraryPanel";
 import PlacedPanel from "./components/PlacedPanel";
+import ImportPanel from "./components/ImportPanel";
 import UserPanel from "./components/UserPanel";
 import ArtworkDetail from "./components/ArtworkDetail";
 import RouteStatus from "./components/RouteStatus";
@@ -22,7 +22,7 @@ export default function MapPage() {
   const { anchors, loading, error, reload } = useAnchors();
   const { query, results, loading: searchLoading, updateQuery, clearSearch } = useSearch();
   const mapRef = useRef(null);
-  const [activePanel, setActivePanel] = useState(null); // null | "search" | "library" | "placed" | "user"
+  const [activePanel, setActivePanel] = useState(null); // null | "search" | "placed" | "import" | "user"
   const [selectedArtwork, setSelectedArtwork] = useState(null);
   const [selectedAnchor, setSelectedAnchor] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
@@ -87,6 +87,13 @@ export default function MapPage() {
     setActiveRoute(null);
   }, []);
 
+  // Placer un artwork (TODO: implémenter le mode placement)
+  const handlePlaceArtwork = useCallback((artwork) => {
+    // Pour l'instant, juste un log - à implémenter avec le mode placement
+    console.log("Placer artwork:", artwork);
+    alert(`Fonctionnalité à venir: placer "${artwork.title}" sur la carte`);
+  }, []);
+
   if (loading) {
     return (
       <div className="map-container">
@@ -133,15 +140,19 @@ export default function MapPage() {
         onClear={clearSearch}
       />
 
-      <LibraryPanel
-        isOpen={activePanel === "library"}
-        onClose={() => setActivePanel(null)}
-      />
-
       <PlacedPanel
         isOpen={activePanel === "placed"}
         onClose={() => setActivePanel(null)}
+        onBack={() => setActivePanel("user")}
         onNavigateToArtwork={handleNavigateToArtwork}
+        onOpenImport={() => setActivePanel("import")}
+      />
+
+      <ImportPanel
+        isOpen={activePanel === "import"}
+        onClose={() => setActivePanel(null)}
+        onBack={() => setActivePanel("placed")}
+        onPlaceArtwork={handlePlaceArtwork}
       />
 
       <UserPanel

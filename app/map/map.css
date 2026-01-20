@@ -7,11 +7,17 @@
    ======================================== */
 
 .map-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: #0a0a0a;
+  overflow: hidden;
 }
 
 /* Permettre tous les gestes sur la carte Mapbox */
@@ -309,6 +315,28 @@ a.mapbox-improve-map {
   justify-content: space-between;
   align-items: center;
   padding: 24px;
+}
+
+.slide-panel__title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slide-panel__back {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-panel__back:hover {
+  opacity: 0.8;
 }
 
 .slide-panel__title {
@@ -848,16 +876,16 @@ a.mapbox-improve-map {
 }
 
 /* ========================================
-   LibraryPanel - Bibliothèque de modèles
+   PlacedPanel - Mes créations
    ======================================== */
 
-.library-panel__auth-message {
+.placed-panel__auth-message {
   color: rgba(255, 255, 255, 0.7);
   text-align: center;
   padding: 32px 16px;
 }
 
-.library-panel__add-btn {
+.placed-panel__add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -874,140 +902,18 @@ a.mapbox-improve-map {
   transition: background 0.2s;
 }
 
-.library-panel__add-btn:hover {
+.placed-panel__add-btn:hover {
   background: #f0f0f0;
 }
 
-.library-panel__upload-form {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 16px;
-  margin-bottom: 24px;
-}
-
-.library-panel__upload-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.library-panel__upload-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  margin: 0;
-}
-
-.library-panel__upload-close {
-  background: none;
-  border: none;
+.placed-panel__loading {
   color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  padding: 4px;
-}
-
-.library-panel__upload-close:hover {
-  color: white;
-}
-
-.library-panel__field {
-  margin-bottom: 16px;
-}
-
-.library-panel__field label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.library-panel__field input,
-.library-panel__field textarea {
-  width: 100%;
-  padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  color: white;
   font-size: 14px;
-  transition: border-color 0.2s;
-  resize: none;
+  text-align: center;
+  padding: 24px 16px;
 }
 
-.library-panel__field input:focus,
-.library-panel__field textarea:focus {
-  outline: none;
-  border-color: #fff;
-}
-
-.library-panel__field input::placeholder,
-.library-panel__field textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.library-panel__file-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px dashed rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.7);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.library-panel__file-input:hover {
-  border-color: rgba(255, 255, 255, 0.5);
-  color: white;
-}
-
-.library-panel__error {
-  padding: 10px 12px;
-  margin-bottom: 16px;
-  background: rgba(255, 107, 107, 0.2);
-  border: 1px solid #ff6b6b;
-  color: #ff6b6b;
-  font-size: 13px;
-}
-
-.library-panel__progress {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  margin-bottom: 16px;
-  overflow: hidden;
-}
-
-.library-panel__progress-bar {
-  height: 100%;
-  background: #fff;
-  transition: width 0.3s;
-}
-
-.library-panel__submit {
-  width: 100%;
-  padding: 12px 16px;
-  background: #fff;
-  color: #415eae;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.library-panel__submit:hover {
-  background: #f0f0f0;
-}
-
-.library-panel__submit:disabled {
-  opacity: 0.7;
-  cursor: wait;
-}
-
-.library-panel__list-title {
+.placed-panel__section-title {
   font-size: 14px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
@@ -1016,96 +922,9 @@ a.mapbox-improve-map {
   margin: 0 0 16px;
 }
 
-.library-panel__list-title span {
+.placed-panel__section-title span {
   font-weight: 400;
   color: rgba(255, 255, 255, 0.5);
-}
-
-.library-panel__empty {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  text-align: center;
-  padding: 24px 16px;
-}
-
-.library-panel__items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.library-panel__item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  margin-bottom: 4px;
-  color: white;
-}
-
-.library-panel__item:last-child {
-  margin-bottom: 0;
-}
-
-.library-panel__item-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.library-panel__item-title {
-  font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.library-panel__item-badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-  color: rgba(255, 255, 255, 0.8);
-  flex-shrink: 0;
-}
-
-.library-panel__item-delete {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  padding: 6px;
-  transition: color 0.2s;
-}
-
-.library-panel__item-delete:hover {
-  color: #ff6b6b;
-}
-
-/* ========================================
-   PlacedPanel - Modèles placés
-   ======================================== */
-
-.placed-panel__auth-message {
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  padding: 32px 16px;
-}
-
-.placed-panel__description {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  margin: 0 0 24px;
-}
-
-.placed-panel__empty {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 14px;
-  text-align: center;
-  padding: 24px 16px;
 }
 
 .placed-panel__empty-state {
@@ -1198,6 +1017,283 @@ a.mapbox-improve-map {
 }
 
 .placed-panel__item-btn--danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+/* ========================================
+   ImportPanel - Import et placement
+   ======================================== */
+
+.import-panel__auth-message {
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.import-panel__add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  background: #fff;
+  border: none;
+  color: #415eae;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.import-panel__add-btn:hover {
+  background: #f0f0f0;
+}
+
+.import-panel__upload-form {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.import-panel__upload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.import-panel__upload-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.import-panel__upload-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.import-panel__upload-close:hover {
+  color: white;
+}
+
+.import-panel__field {
+  margin-bottom: 16px;
+}
+
+.import-panel__field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.import-panel__field input,
+.import-panel__field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  resize: none;
+}
+
+.import-panel__field input:focus,
+.import-panel__field textarea:focus {
+  outline: none;
+  border-color: #fff;
+}
+
+.import-panel__field input::placeholder,
+.import-panel__field textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.import-panel__file-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.import-panel__file-input:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: white;
+}
+
+.import-panel__error {
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+.import-panel__progress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.import-panel__progress-bar {
+  height: 100%;
+  background: #fff;
+  transition: width 0.3s;
+}
+
+.import-panel__submit {
+  width: 100%;
+  padding: 12px 16px;
+  background: #fff;
+  color: #415eae;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.import-panel__submit:hover {
+  background: #f0f0f0;
+}
+
+.import-panel__submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.import-panel__loading {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.import-panel__section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px;
+}
+
+.import-panel__section-title span {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.import-panel__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.import-panel__empty-state p {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.import-panel__empty-state span {
+  font-size: 14px;
+}
+
+.import-panel__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.import-panel__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+}
+
+.import-panel__item:last-child {
+  margin-bottom: 0;
+}
+
+.import-panel__item-icon {
+  color: white;
+}
+
+.import-panel__item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.import-panel__item-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-panel__item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.import-panel__item-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  transition: background 0.15s;
+}
+
+.import-panel__item-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.import-panel__item-btn--place {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.import-panel__item-btn--place:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.import-panel__item-btn--danger {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.import-panel__item-btn--danger:hover {
   background: rgba(255, 107, 107, 0.2);
   color: #ff6b6b;
 }

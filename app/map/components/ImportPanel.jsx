@@ -1,27 +1,50 @@
 "use client";
 
 /**
- * Panel bibliothèque de modèles GLB
- * Gestion des artworks : upload, liste, supprimer
+ * Panel d'import de modèles
+ * - Bouton importer un modèle
+ * - Liste des modèles importés (non placés)
  */
 
 import { useState, useRef } from "react";
 import SlidePanel from "./SlidePanel";
-import { Plus, Trash2, Box, Upload, X } from "lucide-react";
+import { Box, Upload, X, Trash2, MapPinPlus } from "lucide-react";
 import artworkService from "@/lib/services/artworkService";
 import { useUserArtworks } from "../hooks/useUserArtworks";
 
-export default function LibraryPanel({ isOpen, onClose }) {
-  const { artworks, loading, reload, isAuthenticated } = useUserArtworks(isOpen);
+export default function ImportPanel({ isOpen, onClose, onBack, onPlaceArtwork }) {
+  const { artworks, loading, reload, isAuthenticated } = useUserArtworks(isOpen, false);
   const fileInputRef = useRef(null);
 
   // Upload state
+  const [showUploadForm, setShowUploadForm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploadData, setUploadData] = useState({ title: "", description: "", file: null });
   const [uploadError, setUploadError] = useState("");
 
+  // Seulement les modèles non placés
+  const unplacedArtworks = artworks.filter((a) => !a.anchor);
+
+  const handlePlaceArtwork = (artwork) => {
+    if (onPlaceArtwork) {
+      onPlaceArtwork(artwork);
+      onClose();
+    }
+  };
+
+  const handleDeleteArtwork = async (artwork) => {
+    if (!confirm(`Supprimer définitivement "${artwork.title}" ?`)) return;
+
+    try {
+      await artworkService.delete(artwork.id);
+      await reload();
+    } catch (err) {
+      console.error("Erreur suppression artwork:", err);
+    }
+  };
+
+  // Upload handlers
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,11 +78,9 @@ export default function LibraryPanel({ isOpen, onClose }) {
       setIsUploading(true);
       setUploadProgress(20);
 
-      // Upload du fichier
       const uploadResult = await artworkService.uploadFile(uploadData.file);
       setUploadProgress(60);
 
-      // Création de l'artwork
       await artworkService.create(
         uploadData.title.trim(),
         uploadData.description.trim(),
@@ -67,27 +88,15 @@ export default function LibraryPanel({ isOpen, onClose }) {
       );
       setUploadProgress(100);
 
-      // Reset et refresh
       setUploadData({ title: "", description: "", file: null });
       setShowUploadForm(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await reload();
     } catch (err) {
-      setUploadError(err.message || "Erreur lors de l'upload");
+      setUploadError(err.message || "Erreur lors de l'import");
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
-    }
-  };
-
-  const handleDelete = async (artwork) => {
-    if (!confirm(`Supprimer "${artwork.title}" ?`)) return;
-
-    try {
-      await artworkService.delete(artwork.id);
-      await reload();
-    } catch (err) {
-      console.error("Erreur suppression:", err);
     }
   };
 
@@ -100,42 +109,42 @@ export default function LibraryPanel({ isOpen, onClose }) {
 
   if (!isAuthenticated) {
     return (
-      <SlidePanel isOpen={isOpen} onClose={onClose} title="Bibliothèque">
-        <p className="library-panel__auth-message">
-          Connectez-vous pour accéder à votre bibliothèque de modèles.
+      <SlidePanel isOpen={isOpen} onClose={onClose} onBack={onBack} title="Placer une création">
+        <p className="import-panel__auth-message">
+          Connectez-vous pour gérer vos modèles.
         </p>
       </SlidePanel>
     );
   }
 
   return (
-    <SlidePanel isOpen={isOpen} onClose={onClose} title="Bibliothèque">
-      {/* Bouton ajouter */}
+    <SlidePanel isOpen={isOpen} onClose={onClose} onBack={onBack} title="Placer une création">
+      {/* Bouton importer */}
       {!showUploadForm && (
         <button
-          className="library-panel__add-btn"
+          className="import-panel__add-btn"
           onClick={() => setShowUploadForm(true)}
         >
-          <Plus size={20} />
+          <Upload size={20} />
           <span>Importer un modèle</span>
         </button>
       )}
 
       {/* Formulaire upload */}
       {showUploadForm && (
-        <div className="library-panel__upload-form">
-          <div className="library-panel__upload-header">
+        <div className="import-panel__upload-form">
+          <div className="import-panel__upload-header">
             <h3>Nouveau modèle</h3>
-            <button className="library-panel__upload-close" onClick={cancelUpload}>
+            <button className="import-panel__upload-close" onClick={cancelUpload}>
               <X size={20} />
             </button>
           </div>
 
           <form onSubmit={handleUpload}>
-            <div className="library-panel__field">
+            <div className="import-panel__field">
               <label>Fichier GLB</label>
               <div
-                className="library-panel__file-input"
+                className="import-panel__file-input"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload size={20} />
@@ -150,7 +159,7 @@ export default function LibraryPanel({ isOpen, onClose }) {
               />
             </div>
 
-            <div className="library-panel__field">
+            <div className="import-panel__field">
               <label>Titre</label>
               <input
                 type="text"
@@ -160,7 +169,7 @@ export default function LibraryPanel({ isOpen, onClose }) {
               />
             </div>
 
-            <div className="library-panel__field">
+            <div className="import-panel__field">
               <label>Description (optionnel)</label>
               <textarea
                 value={uploadData.description}
@@ -171,13 +180,13 @@ export default function LibraryPanel({ isOpen, onClose }) {
             </div>
 
             {uploadError && (
-              <div className="library-panel__error">{uploadError}</div>
+              <div className="import-panel__error">{uploadError}</div>
             )}
 
             {isUploading && (
-              <div className="library-panel__progress">
+              <div className="import-panel__progress">
                 <div
-                  className="library-panel__progress-bar"
+                  className="import-panel__progress-bar"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
@@ -185,7 +194,7 @@ export default function LibraryPanel({ isOpen, onClose }) {
 
             <button
               type="submit"
-              className="library-panel__submit"
+              className="import-panel__submit"
               disabled={isUploading}
             >
               {isUploading ? "Import en cours..." : "Importer"}
@@ -194,39 +203,55 @@ export default function LibraryPanel({ isOpen, onClose }) {
         </div>
       )}
 
-      {/* Liste des artworks */}
-      <div className="library-panel__list">
-        <h3 className="library-panel__list-title">
-          Mes modèles <span>({artworks.length})</span>
-        </h3>
+      {loading ? (
+        <p className="import-panel__loading">Chargement...</p>
+      ) : (
+        <>
+          {/* Liste des modèles importés */}
+          <h3 className="import-panel__section-title">
+            Mes modèles <span>({unplacedArtworks.length})</span>
+          </h3>
 
-        {loading ? (
-          <p className="library-panel__empty">Chargement...</p>
-        ) : artworks.length === 0 ? (
-          <p className="library-panel__empty">Aucun modèle importé</p>
-        ) : (
-          <ul className="library-panel__items">
-            {artworks.map((artwork) => (
-              <li key={artwork.id} className="library-panel__item">
-                <Box size={20} />
-                <div className="library-panel__item-info">
-                  <span className="library-panel__item-title">{artwork.title}</span>
-                  {artwork.anchor && (
-                    <span className="library-panel__item-badge">Placé</span>
-                  )}
-                </div>
-                <button
-                  className="library-panel__item-delete"
-                  onClick={() => handleDelete(artwork)}
-                  aria-label="Supprimer"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {unplacedArtworks.length === 0 ? (
+            <div className="import-panel__empty-state">
+              <Box size={32} />
+              <p>Aucun modèle</p>
+              <span>Importez un modèle pour le placer sur la carte.</span>
+            </div>
+          ) : (
+            <ul className="import-panel__items">
+              {unplacedArtworks.map((artwork) => (
+                <li key={artwork.id} className="import-panel__item">
+                  <div className="import-panel__item-icon">
+                    <Box size={20} />
+                  </div>
+                  <div className="import-panel__item-info">
+                    <span className="import-panel__item-title">{artwork.title}</span>
+                  </div>
+                  <div className="import-panel__item-actions">
+                    <button
+                      className="import-panel__item-btn import-panel__item-btn--place"
+                      onClick={() => handlePlaceArtwork(artwork)}
+                      aria-label="Placer sur la carte"
+                      title="Placer sur la carte"
+                    >
+                      <MapPinPlus size={16} />
+                    </button>
+                    <button
+                      className="import-panel__item-btn import-panel__item-btn--danger"
+                      onClick={() => handleDeleteArtwork(artwork)}
+                      aria-label="Supprimer"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
     </SlidePanel>
   );
 }
