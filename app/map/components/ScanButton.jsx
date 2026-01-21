@@ -75,9 +75,7 @@ export default function ScanButton({ anchors, onScan }) {
 
     // Si on est dans Unity, signaler le lancement AR via URL scheme
     if (getUserState().isUnityContext) {
-      const message = JSON.stringify({ action: "launchAR" });
-      console.log("[ScanButton] Sending to Unity:", message);
-      window.location.href = "unity:" + message;
+      window.location.href = 'unity:{"action":"launchAR"}';
     }
 
     // Callback optionnel (pour usage hors Unity)
