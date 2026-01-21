@@ -237,11 +237,34 @@ function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
 /**
  * Hook d'initialisation de la carte Mapbox avec Three.js
  */
-export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtworkSelect, onRequestRoute }) {
+export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtworkSelect, onRequestRoute, onBoundsChange }) {
   const mapRef = useRef(null);
   const cleanupRef = useRef([]);
   const layersRef = useRef([]);
   const selectByAnchorIdRef = useRef(null);
+  const mapInitializedRef = useRef(false);
+  const isAnimatingRef = useRef(false);
+  const mapboxglRef = useRef(null);
+  const tweenRef = useRef(null);
+  const threeRef = useRef(null);
+  const gltfLoaderRef = useRef(null);
+  const labelsCleanupRef = useRef(null);
+  const addedAnchorIdsRef = useRef(new Set());
+  const styleLoadedRef = useRef(false);
+
+  // Stocker les callbacks dans des refs pour éviter les re-créations de initializeMap
+  const onBoundsChangeRef = useRef(onBoundsChange);
+  const onMapReadyRef = useRef(onMapReady);
+  const onArtworkSelectRef = useRef(onArtworkSelect);
+  const onRequestRouteRef = useRef(onRequestRoute);
+
+  // Mettre à jour les refs quand les props changent
+  useEffect(() => {
+    onBoundsChangeRef.current = onBoundsChange;
+    onMapReadyRef.current = onMapReady;
+    onArtworkSelectRef.current = onArtworkSelect;
+    onRequestRouteRef.current = onRequestRoute;
+  }, [onBoundsChange, onMapReady, onArtworkSelect, onRequestRoute]);
 
   // Fonction pour sélectionner un artwork (utilisée par la recherche)
   const selectArtwork = useCallback((anchor) => {
@@ -271,6 +294,17 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
     clearRoute(mapRef.current);
   }, []);
 
+  // Fonction pour obtenir les bounds de la carte
+  const getMapBounds = useCallback((map) => {
+    const bounds = map.getBounds();
+    return {
+      minLat: bounds.getSouth(),
+      maxLat: bounds.getNorth(),
+      minLng: bounds.getWest(),
+      maxLng: bounds.getEast(),
+    };
+  }, []);
+
   // Initialisation de la carte
   const initializeMap = useCallback(async () => {
     if (!containerRef.current || mapRef.current) return;
@@ -281,21 +315,22 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
     const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader");
     const TWEEN = (await import("@tweenjs/tween.js")).default;
 
+    // Stocker les refs pour utilisation dans les effets
+    mapboxglRef.current = mapboxgl;
+    tweenRef.current = TWEEN;
+    threeRef.current = THREE;
+    gltfLoaderRef.current = GLTFLoader;
+
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-    // Déterminer le centre initial (premier anchor ou défaut)
-    const center = anchors.length > 0
-      ? [anchors[0].longitude, anchors[0].latitude]
-      : MAP_CONFIG.defaultCenter;
-
-    // Création de la carte
+    // Création de la carte (centre par défaut, le GPS centrera sur l'utilisateur)
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: process.env.NEXT_PUBLIC_MAPBOX_STYLE,
       zoom: MAP_CONFIG.initialZoom,
       minZoom: MAP_CONFIG.minZoom,
       maxZoom: MAP_CONFIG.maxZoom,
-      center,
+      center: MAP_CONFIG.defaultCenter,
       pitch: MAP_CONFIG.initialPitch,
       antialias: true,
     });
@@ -321,53 +356,61 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
     }
     requestAnimationFrame(animate);
 
+    // Fonction pour initialiser les clusters
+    const initClusters = () => {
+      if (!map.getSource("artworks-clusters")) {
+        styleLoadedRef.current = true;
+        createArtworkClusters(map, [], selectByAnchorIdRef);
+      }
+    };
+
     // Ajout des layers et labels au chargement du style
-    map.on("style.load", () => {
-      if (anchors.length === 0) return;
+    map.on("style.load", initClusters);
 
-      // Créer les clusters (visibles au dézoom)
-      createArtworkClusters(map, anchors, selectByAnchorIdRef);
+    // Notifier que la map est prête et déclencher le chargement initial
+    map.on("load", () => {
+      mapInitializedRef.current = true;
 
-      // Créer les layers 3D pour chaque anchor
-      const layers = [];
-      anchors.forEach((anchor, index) => {
-        if (!anchor.artwork?.url) return;
+      // S'assurer que les clusters sont créés (si style.load a déjà été déclenché)
+      initClusters();
 
-        const layer = createArtworkLayer({
-          mapboxgl,
-          THREE,
-          GLTFLoader,
-          anchor,
-          index,
-        });
-        map.addLayer(layer);
-        layers.push(layer);
-      });
-      layersRef.current = layers;
+      onMapReadyRef.current?.();
 
-      // Créer les labels avec callback pour l'animation
-      const { cleanup: cleanupLabels, selectByAnchorId } = createArtworkLabels({
-        mapboxgl,
-        map,
-        anchors: anchors.filter((a) => a.artwork?.url),
-        layers,
-        TWEEN,
-        userState,
-        accessToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
-        onArtworkSelect,
-        onRequestRoute,
-      });
-      selectByAnchorIdRef.current = selectByAnchorId;
-      cleanupRef.current.push(cleanupLabels);
+      // Charger les anchors de la zone visible initiale
+      if (onBoundsChangeRef.current) {
+        const bounds = getMapBounds(map);
+        onBoundsChangeRef.current(bounds);
+      }
     });
 
-    // Notifier que la map est prête
-    map.on("load", () => {
-      onMapReady?.();
+    // Tracker les animations pour éviter les appels multiples à onBoundsChange
+    map.on("movestart", (e) => {
+      // Si le mouvement est programmatique (flyTo, easeTo, etc.)
+      if (e.originalEvent === undefined) {
+        isAnimatingRef.current = true;
+      }
+    });
+
+    // Écouter les déplacements de la carte pour charger les nouveaux anchors
+    map.on("moveend", () => {
+      // Ignorer si la map n'est pas initialisée ou si c'est une animation programmatique en cours
+      if (!mapInitializedRef.current) return;
+
+      // Si c'était une animation programmatique, la marquer comme terminée
+      // mais ne pas déclencher de chargement (sera fait au prochain mouvement utilisateur)
+      if (isAnimatingRef.current) {
+        isAnimatingRef.current = false;
+        return;
+      }
+
+      if (onBoundsChangeRef.current) {
+        const bounds = getMapBounds(map);
+        onBoundsChangeRef.current(bounds);
+      }
     });
 
     return map;
-  }, [anchors, containerRef, onMapReady, onArtworkSelect, onRequestRoute]);
+  }, [containerRef, getMapBounds]);
 
   // Effet d'initialisation
   useEffect(() => {
@@ -395,6 +438,110 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       }
     };
   }, [isReady, initializeMap]);
+
+  // Effet pour mettre à jour la source GeoJSON des clusters quand les anchors changent
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapInitializedRef.current) return;
+
+    const source = map.getSource("artworks-clusters");
+    if (!source) return;
+
+    // Créer le nouveau GeoJSON
+    const geojson = {
+      type: "FeatureCollection",
+      features: anchors.map((anchor) => ({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [anchor.longitude, anchor.latitude],
+        },
+        properties: {
+          id: anchor.id,
+          title: anchor.artwork?.title || "",
+        },
+      })),
+    };
+
+    source.setData(geojson);
+  }, [anchors]);
+
+  // Effet pour créer les layers 3D quand les anchors changent
+  useEffect(() => {
+    const map = mapRef.current;
+    const mapboxgl = mapboxglRef.current;
+    const THREE = threeRef.current;
+    const GLTFLoader = gltfLoaderRef.current;
+
+    if (!map || !mapboxgl || !THREE || !GLTFLoader) return;
+    if (!mapInitializedRef.current || !styleLoadedRef.current) return;
+
+    // Ajouter les layers 3D pour les nouveaux anchors uniquement
+    anchors.forEach((anchor) => {
+      if (!anchor.artwork?.url) return;
+      if (addedAnchorIdsRef.current.has(anchor.id)) return;
+
+      try {
+        const layer = createArtworkLayer({
+          mapboxgl,
+          THREE,
+          GLTFLoader,
+          anchor,
+          index: addedAnchorIdsRef.current.size,
+        });
+
+        map.addLayer(layer);
+        layersRef.current.push(layer);
+        addedAnchorIdsRef.current.add(anchor.id);
+      } catch (error) {
+        console.error("Erreur création layer 3D:", error);
+      }
+    });
+  }, [anchors]);
+
+  // Effet pour créer/mettre à jour les labels quand les anchors changent
+  useEffect(() => {
+    const map = mapRef.current;
+    const mapboxgl = mapboxglRef.current;
+    const TWEEN = tweenRef.current;
+
+    if (!map || !mapboxgl || !TWEEN || !mapInitializedRef.current) return;
+    if (anchors.length === 0) return;
+
+    // Cleanup des labels précédents
+    if (labelsCleanupRef.current) {
+      labelsCleanupRef.current();
+      labelsCleanupRef.current = null;
+    }
+
+    // Créer les labels pour les anchors avec artwork
+    const anchorsWithArtwork = anchors.filter((a) => a.artwork?.url);
+    if (anchorsWithArtwork.length === 0) return;
+
+    const userState = getUserState();
+
+    const { cleanup, selectByAnchorId } = createArtworkLabels({
+      mapboxgl,
+      map,
+      anchors: anchorsWithArtwork,
+      layers: layersRef.current,
+      TWEEN,
+      userState,
+      accessToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
+      onArtworkSelect: onArtworkSelectRef.current,
+      onRequestRoute: onRequestRouteRef.current,
+    });
+
+    labelsCleanupRef.current = cleanup;
+    selectByAnchorIdRef.current = selectByAnchorId;
+
+    return () => {
+      if (labelsCleanupRef.current) {
+        labelsCleanupRef.current();
+        labelsCleanupRef.current = null;
+      }
+    };
+  }, [anchors]);
 
   return { map: mapRef.current, selectArtwork, showRoute, clearRoute: clearMapRoute };
 }

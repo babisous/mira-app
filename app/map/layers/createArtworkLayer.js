@@ -66,6 +66,7 @@ export function createArtworkLayer({
 
   // État du layer
   let modelLoaded = false;
+  let modelLoading = false;
   let isVisible = true;
   let skyLine = null;
   let skyLineVisible = false;
@@ -81,32 +82,14 @@ export function createArtworkLayer({
       this.scene = new THREE.Scene();
       this.map = map;
       this.THREE = THREE;
+      this.GLTFLoader = GLTFLoader;
+      this.modelUrl = modelUrl;
 
       // Configuration de l'éclairage
       setupSceneLighting(THREE, this.scene);
 
-      // Matériau des artworks
-      const material = createArtworkMaterial(THREE);
-
-      // Chargement du modèle
-      const loader = new GLTFLoader();
-      loader.load(
-        modelUrl,
-        (gltf) => {
-          applyMaterialToModel(gltf.scene, material);
-          this.model = gltf.scene;
-          this.scene.add(gltf.scene);
-
-          // Calculer la bounding box pour la ligne
-          const box = new THREE.Box3().setFromObject(gltf.scene);
-          this.modelTop = box.max.y;
-          this.modelCenter = box.getCenter(new THREE.Vector3());
-
-          modelLoaded = true;
-        },
-        undefined,
-        undefined
-      );
+      // Matériau des artworks (préparé mais pas encore appliqué)
+      this.material = createArtworkMaterial(THREE);
 
       // Configuration du renderer
       this.renderer = new THREE.WebGLRenderer({
@@ -115,6 +98,35 @@ export function createArtworkLayer({
         antialias: true,
       });
       this.renderer.autoClear = false;
+    },
+
+    // Charge le modèle 3D (appelé uniquement quand nécessaire)
+    loadModel() {
+      if (modelLoaded || modelLoading) return;
+      modelLoading = true;
+
+      const loader = new this.GLTFLoader();
+      loader.load(
+        this.modelUrl,
+        (gltf) => {
+          applyMaterialToModel(gltf.scene, this.material);
+          this.model = gltf.scene;
+          this.scene.add(gltf.scene);
+
+          // Calculer la bounding box pour la ligne
+          const box = new this.THREE.Box3().setFromObject(gltf.scene);
+          this.modelTop = box.max.y;
+          this.modelCenter = box.getCenter(new this.THREE.Vector3());
+
+          modelLoaded = true;
+          modelLoading = false;
+        },
+        undefined,
+        (error) => {
+          console.error("Erreur chargement modèle 3D:", error);
+          modelLoading = false;
+        }
+      );
     },
 
     // Méthode pour activer/désactiver la ligne vers le ciel
@@ -145,12 +157,18 @@ export function createArtworkLayer({
     },
 
     render(gl, matrix) {
-      if (!modelLoaded) return;
-
       const zoom = this.map.getZoom();
 
       // Gestion de la visibilité selon le zoom
       const shouldBeVisible = zoom >= MAP_CONFIG.modelVisibilityZoom;
+
+      // Charger le modèle uniquement quand on zoome assez pour le voir
+      if (shouldBeVisible && !modelLoaded && !modelLoading) {
+        this.loadModel();
+      }
+
+      if (!modelLoaded) return;
+
       if (shouldBeVisible !== isVisible) {
         isVisible = shouldBeVisible;
         if (this.model) {

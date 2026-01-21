@@ -19,7 +19,7 @@ import ScanButton from "./components/ScanButton";
 import "./map.css";
 
 export default function MapPage() {
-  const { anchors, loading, error, reload } = useAnchors();
+  const { anchors, loading, error, loadByBounds, reload } = useAnchors();
   const { query, results, loading: searchLoading, updateQuery, clearSearch } = useSearch();
   const mapRef = useRef(null);
   const [activePanel, setActivePanel] = useState(null); // null | "search" | "placed" | "import" | "user"
@@ -94,16 +94,6 @@ export default function MapPage() {
     alert(`Fonctionnalité à venir: placer "${artwork.title}" sur la carte`);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="map-container">
-        <div className="map-loading">
-          <p>Chargement de la carte...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="map-container">
@@ -125,6 +115,7 @@ export default function MapPage() {
         loading={loading}
         onArtworkSelect={handleArtworkSelect}
         onRequestRoute={handleRequestRoute}
+        onBoundsChange={loadByBounds}
       />
 
       <NavButtons activePanel={activePanel} onPanelChange={handlePanelChange} />
