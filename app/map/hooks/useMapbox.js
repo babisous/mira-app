@@ -3,7 +3,7 @@
  * Supporte deux modes: Desktop (navigator.geolocation) et Unity (window.updateGPS)
  */
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { MAP_CONFIG } from "../utils/mapConfig";
 import { createArtworkLayer } from "../layers/createArtworkLayer";
 import { createArtworkLabels, showWalkingRoute, clearRoute } from "../layers/createArtworkLabel";
@@ -259,6 +259,9 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
   const addedAnchorIdsRef = useRef(new Set());
   const styleLoadedRef = useRef(false);
 
+  // État pour forcer le re-render des effets quand la map est prête
+  const [mapReady, setMapReady] = useState(false);
+
   // Stocker les callbacks dans des refs pour éviter les re-créations de initializeMap
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onMapReadyRef = useRef(onMapReady);
@@ -340,6 +343,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       center: MAP_CONFIG.defaultCenter,
       pitch: MAP_CONFIG.initialPitch,
       antialias: true,
+      fadeDuration: 0, // Désactiver le fade des symboles (clusters, labels)
     });
 
     mapRef.current = map;
@@ -368,6 +372,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
       if (!map.getSource("artworks-clusters")) {
         styleLoadedRef.current = true;
         createArtworkClusters(map, [], selectByAnchorIdRef);
+        setMapReady(true); // Déclencher les effets qui attendent que la map soit prête
       }
     };
 
@@ -504,7 +509,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
         console.error("Erreur création layer 3D:", error);
       }
     });
-  }, [anchors]);
+  }, [anchors, mapReady]);
 
   // Effet pour créer/mettre à jour les labels quand les anchors changent
   useEffect(() => {
@@ -548,7 +553,7 @@ export function useMapbox({ containerRef, anchors, isReady, onMapReady, onArtwor
         labelsCleanupRef.current = null;
       }
     };
-  }, [anchors]);
+  }, [anchors, mapReady]);
 
   return { map: mapRef.current, selectArtwork, showRoute, clearRoute: clearMapRoute };
 }
