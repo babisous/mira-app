@@ -87,12 +87,14 @@ export default function MapPage() {
     setActiveRoute(null);
   }, []);
 
-  // Placer un artwork (TODO: implémenter le mode placement)
-  const handlePlaceArtwork = useCallback((artwork) => {
-    // Pour l'instant, juste un log - à implémenter avec le mode placement
-    console.log("Placer artwork:", artwork);
-    alert(`Fonctionnalité à venir: placer "${artwork.title}" sur la carte`);
-  }, []);
+  // Callback après création d'un anchor
+  const handleAnchorCreated = useCallback(() => {
+    // Recharger les anchors de la zone visible
+    if (mapRef.current?.getBounds) {
+      const bounds = mapRef.current.getBounds();
+      if (bounds) loadByBounds(bounds);
+    }
+  }, [loadByBounds]);
 
   if (error) {
     return (
@@ -143,7 +145,7 @@ export default function MapPage() {
         isOpen={activePanel === "import"}
         onClose={() => setActivePanel(null)}
         onBack={() => setActivePanel("placed")}
-        onPlaceArtwork={handlePlaceArtwork}
+        onAnchorCreated={handleAnchorCreated}
       />
 
       <UserPanel

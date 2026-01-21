@@ -10,9 +10,10 @@ import { useState, useRef } from "react";
 import SlidePanel from "./SlidePanel";
 import { Box, Upload, X, Trash2, MapPinPlus } from "lucide-react";
 import artworkService from "@/lib/services/artworkService";
+import anchorService from "@/lib/services/anchorService";
 import { useUserArtworks } from "../hooks/useUserArtworks";
 
-export default function ImportPanel({ isOpen, onClose, onBack, onPlaceArtwork }) {
+export default function ImportPanel({ isOpen, onClose, onBack, onAnchorCreated }) {
   const { artworks, loading, reload, isAuthenticated } = useUserArtworks(isOpen, false);
   const fileInputRef = useRef(null);
 
@@ -23,13 +24,54 @@ export default function ImportPanel({ isOpen, onClose, onBack, onPlaceArtwork })
   const [uploadData, setUploadData] = useState({ title: "", description: "", file: null });
   const [uploadError, setUploadError] = useState("");
 
+  // Placement state
+  const [artworkToPlace, setArtworkToPlace] = useState(null);
+  const [placeData, setPlaceData] = useState({ latitude: "", longitude: "" });
+  const [placeError, setPlaceError] = useState("");
+  const [isPlacing, setIsPlacing] = useState(false);
+
   // Seulement les modèles non placés
   const unplacedArtworks = artworks.filter((a) => !a.anchor);
 
-  const handlePlaceArtwork = (artwork) => {
-    if (onPlaceArtwork) {
-      onPlaceArtwork(artwork);
-      onClose();
+  const handleStartPlace = (artwork) => {
+    setArtworkToPlace(artwork);
+    setPlaceData({ latitude: "", longitude: "" });
+    setPlaceError("");
+  };
+
+  const handleCancelPlace = () => {
+    setArtworkToPlace(null);
+    setPlaceData({ latitude: "", longitude: "" });
+    setPlaceError("");
+  };
+
+  const handleSubmitPlace = async (e) => {
+    e.preventDefault();
+    setPlaceError("");
+
+    const lat = parseFloat(placeData.latitude);
+    const lng = parseFloat(placeData.longitude);
+
+    if (isNaN(lat) || lat < -90 || lat > 90) {
+      setPlaceError("Latitude invalide (-90 à 90)");
+      return;
+    }
+    if (isNaN(lng) || lng < -180 || lng > 180) {
+      setPlaceError("Longitude invalide (-180 à 180)");
+      return;
+    }
+
+    try {
+      setIsPlacing(true);
+      await anchorService.createOrUpdate(artworkToPlace.id, lat, lng);
+      setArtworkToPlace(null);
+      setPlaceData({ latitude: "", longitude: "" });
+      await reload();
+      onAnchorCreated?.();
+    } catch (err) {
+      setPlaceError(err.message || "Erreur lors du placement");
+    } finally {
+      setIsPlacing(false);
     }
   };
 
@@ -113,6 +155,56 @@ export default function ImportPanel({ isOpen, onClose, onBack, onPlaceArtwork })
         <p className="import-panel__auth-message">
           Connectez-vous pour gérer vos modèles.
         </p>
+      </SlidePanel>
+    );
+  }
+
+  // Vue formulaire de placement
+  if (artworkToPlace) {
+    return (
+      <SlidePanel isOpen={isOpen} onClose={onClose} onBack={handleCancelPlace} title="Placer sur la carte">
+        <div className="import-panel__place-form">
+          <div className="import-panel__place-artwork">
+            <Box size={24} />
+            <span>{artworkToPlace.title}</span>
+          </div>
+
+          <form onSubmit={handleSubmitPlace}>
+            <div className="import-panel__field">
+              <label>Latitude</label>
+              <input
+                type="number"
+                step="any"
+                value={placeData.latitude}
+                onChange={(e) => setPlaceData((prev) => ({ ...prev, latitude: e.target.value }))}
+                placeholder="48.8566"
+              />
+            </div>
+
+            <div className="import-panel__field">
+              <label>Longitude</label>
+              <input
+                type="number"
+                step="any"
+                value={placeData.longitude}
+                onChange={(e) => setPlaceData((prev) => ({ ...prev, longitude: e.target.value }))}
+                placeholder="2.3522"
+              />
+            </div>
+
+            {placeError && (
+              <div className="import-panel__error">{placeError}</div>
+            )}
+
+            <button
+              type="submit"
+              className="import-panel__submit"
+              disabled={isPlacing}
+            >
+              {isPlacing ? "Placement..." : "Placer"}
+            </button>
+          </form>
+        </div>
       </SlidePanel>
     );
   }
@@ -231,7 +323,7 @@ export default function ImportPanel({ isOpen, onClose, onBack, onPlaceArtwork })
                   <div className="import-panel__item-actions">
                     <button
                       className="import-panel__item-btn import-panel__item-btn--place"
-                      onClick={() => handlePlaceArtwork(artwork)}
+                      onClick={() => handleStartPlace(artwork)}
                       aria-label="Placer sur la carte"
                       title="Placer sur la carte"
                     >

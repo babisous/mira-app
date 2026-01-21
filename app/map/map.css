@@ -1298,6 +1298,23 @@ a.mapbox-improve-map {
   color: #ff6b6b;
 }
 
+.import-panel__place-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.import-panel__place-artwork {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+}
+
 /* ========================================
    Statut itinéraire
    ======================================== */

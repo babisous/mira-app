@@ -12,7 +12,7 @@ const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onAr
   const containerRef = useRef(null);
 
   // Initialisation de la carte
-  const { selectArtwork, showRoute, clearRoute } = useMapbox({
+  const { map, selectArtwork, showRoute, clearRoute } = useMapbox({
     containerRef,
     anchors,
     isReady: !loading,
@@ -22,12 +22,22 @@ const MapView = forwardRef(function MapView({ anchors, loading, onMapReady, onAr
     onBoundsChange,
   });
 
-  // Exposer selectArtwork, showRoute et clearRoute au parent via ref
+  // Exposer les méthodes au parent via ref
   useImperativeHandle(ref, () => ({
     selectArtwork,
     showRoute,
     clearRoute,
-  }), [selectArtwork, showRoute, clearRoute]);
+    getBounds: () => {
+      if (!map) return null;
+      const bounds = map.getBounds();
+      return {
+        minLat: bounds.getSouth(),
+        maxLat: bounds.getNorth(),
+        minLng: bounds.getWest(),
+        maxLng: bounds.getEast(),
+      };
+    },
+  }), [map, selectArtwork, showRoute, clearRoute]);
 
   return (
     <div
