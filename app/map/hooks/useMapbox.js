@@ -160,6 +160,9 @@ function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
       "circle-radius": 12,
       "circle-stroke-width": 2,
       "circle-stroke-color": "#fff",
+      "circle-opacity-transition": { duration: 0 },
+      "circle-radius-transition": { duration: 0 },
+      "circle-color-transition": { duration: 0 },
     },
   });
 
@@ -177,6 +180,7 @@ function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
     },
     paint: {
       "text-color": "#fff",
+      "text-opacity-transition": { duration: 0 },
     },
   });
 
@@ -192,6 +196,9 @@ function createArtworkClusters(map, anchors, selectByAnchorIdRef) {
       "circle-radius": 7,
       "circle-stroke-width": 2,
       "circle-stroke-color": "#fff",
+      "circle-opacity-transition": { duration: 0 },
+      "circle-radius-transition": { duration: 0 },
+      "circle-color-transition": { duration: 0 },
     },
   });
 
