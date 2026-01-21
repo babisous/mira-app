@@ -71,9 +71,15 @@ export default function ScanButton({ anchors, onScan }) {
   if (!isMobile) return null;
 
   const handleClick = () => {
-    if (isEnabled && nearestAnchor && onScan) {
-      onScan(nearestAnchor);
+    if (!isEnabled) return;
+
+    // Si on est dans Unity, signaler le lancement AR
+    if (getUserState().isUnityContext && window.Unity?.call) {
+      window.Unity.call(JSON.stringify({ action: "launchAR" }));
     }
+
+    // Callback optionnel (pour usage hors Unity)
+    onScan?.(nearestAnchor);
   };
 
   return (
